@@ -17,12 +17,19 @@ if errorlevel 1 (
   )
 )
 
-if not exist "pubspec.yaml" (
-  echo [BLAD] Projekt nie jest przygotowany.
-  echo Uruchom najpierw scripts\prepare_project.bat
-  pause
-  exit /b 1
+if not exist "android\" (
+  echo Projekt nie jest przygotowany. Generuje Android...
+  call "%FLUTTER%" create --platforms=android --org pl.cidex --project-name cidex_mobile .
+  if errorlevel 1 goto :fail
 )
+
+echo Wgrywanie aktualnej wersji CIDEX Mobile...
+python "scripts\apply_sources.py"
+if errorlevel 1 goto :fail
+python "scripts\patch_android.py"
+if errorlevel 1 goto :fail
+call "%FLUTTER%" pub get
+if errorlevel 1 goto :fail
 
 set "SDK=%LOCALAPPDATA%\Android\Sdk"
 set "EMU=%SDK%\emulator\emulator.exe"
@@ -64,7 +71,6 @@ if not defined DEVICE (
     echo.
     echo Otworz Android Studio ^> Device Manager ^> Create device.
     echo Polecany: Pixel 7 lub podobny, Android API 35 lub nowszy.
-    echo Po utworzeniu zamknij Android Studio i uruchom ten BAT ponownie.
     pause
     exit /b 1
   )
@@ -86,15 +92,17 @@ if not defined DEVICE (
 
 echo.
 echo Emulator gotowy: %DEVICE%
+echo CIDEX API dla emulatora: http://10.0.2.2:8765
 echo Uruchamiam CIDEX Mobile...
 echo.
 call "%FLUTTER%" run -d %DEVICE%
-
-if errorlevel 1 (
-  echo.
-  echo [BLAD] Flutter run zakonczyl sie bledem.
-  pause
-  exit /b 1
-)
+if errorlevel 1 goto :fail
 
 endlocal
+exit /b 0
+
+:fail
+echo.
+echo [BLAD] Nie udalo sie uruchomic CIDEX Mobile.
+pause
+exit /b 1
