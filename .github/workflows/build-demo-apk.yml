@@ -1,4 +1,4 @@
-name: Build CIDEX Mobile APK
+name: Build WMM APK
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
       - name: Generate Android project
         run: flutter create --platforms=android --org pl.cidex --project-name cidex_mobile .
 
-      - name: Apply CIDEX Mobile sources
+      - name: Apply WMM sources
         run: |
           python scripts/apply_sources.py
           python scripts/patch_android.py
@@ -40,11 +40,11 @@ jobs:
         run: flutter build apk --debug
 
       - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-debug.apk Cidex_Mobile.apk
+        run: cp build/app/outputs/flutter-apk/app-debug.apk WMM.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Cidex-Mobile-apk
-          path: Cidex_Mobile.apk
+          name: WMM-apk
+          path: WMM.apk
           if-no-files-found: error
