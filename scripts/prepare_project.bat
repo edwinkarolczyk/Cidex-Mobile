@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-title CIDEX Mobile - przygotowanie projektu
+title Warsztat Menager Mobile - przygotowanie projektu
 
 cd /d "%~dp0\.."
 
@@ -18,7 +18,7 @@ if errorlevel 1 (
 )
 
 echo ================================================
-echo   CIDEX Mobile - przygotowanie Android
+echo   WMM - przygotowanie Android
 echo ================================================
 echo.
 
@@ -30,11 +30,11 @@ if not exist "android\" (
   echo [1/4] Folder android juz istnieje - pomijam generowanie.
 )
 
-echo [2/4] Wgrywanie aktualnych zrodel CIDEX Mobile...
+echo [2/4] Wgrywanie aktualnych zrodel WMM...
 python "scripts\apply_sources.py"
 if errorlevel 1 goto :fail
 
-echo [3/4] Ustawianie INTERNET, CAMERA i lokalnego HTTP...
+echo [3/4] Ustawianie nazwy, ikony, INTERNET, CAMERA i lokalnego HTTP...
 python "scripts\patch_android.py"
 if errorlevel 1 goto :fail
 
@@ -45,8 +45,8 @@ if errorlevel 1 goto :fail
 echo.
 echo ================================================
 echo GOTOWE.
-echo Emulator: CIDEX API = http://10.0.2.2:8765
-echo Token wpisz w ustawieniach aplikacji.
+echo Emulator: serwer WMM = http://10.0.2.2:8765
+echo Token 6 znakow wpisz w ustawieniach aplikacji.
 echo Teraz uruchom: scripts\run_emulator.bat
 echo ================================================
 echo.
