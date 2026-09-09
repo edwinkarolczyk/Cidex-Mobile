@@ -4,8 +4,8 @@ title CIDEX Mobile - instalacja na telefon
 
 cd /d "%~dp0\.."
 
-if not exist "Cidex_Mobile_demo.apk" (
-  echo [BLAD] Brak Cidex_Mobile_demo.apk.
+if not exist "Cidex_Mobile.apk" (
+  echo [BLAD] Brak Cidex_Mobile.apk.
   echo Najpierw uruchom scripts\build_apk.bat
   pause
   exit /b 1
@@ -27,8 +27,8 @@ if not exist "%ADB%" (
 echo Podlaczone urzadzenia:
 "%ADB%" devices
 echo.
-echo Instalowanie na fizycznym telefonie...
-"%ADB%" -d install -r "Cidex_Mobile_demo.apk"
+echo Instalowanie CIDEX Mobile na telefonie...
+"%ADB%" -d install -r "Cidex_Mobile.apk"
 
 if errorlevel 1 (
   echo.
@@ -39,5 +39,5 @@ if errorlevel 1 (
 )
 
 echo.
-echo GOTOWE - CIDEX Mobile demo zainstalowany.
+echo GOTOWE - CIDEX Mobile zainstalowany.
 pause
