@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-title CIDEX Mobile - BUILD APK
+title Warsztat Menager Mobile - BUILD APK
 
 cd /d "%~dp0\.."
 
@@ -18,7 +18,7 @@ if errorlevel 1 (
 )
 
 echo ================================================
-echo   CIDEX Mobile - BUILD APK
+echo   WMM - WARSZTAT MENAGER MOBILE - BUILD APK
 echo ================================================
 echo.
 
@@ -30,11 +30,11 @@ if not exist "android\" (
   echo [1/6] Projekt Android jest gotowy.
 )
 
-echo [2/6] Wgrywanie aktualnych zrodel CIDEX Mobile...
+echo [2/6] Wgrywanie aktualnych zrodel WMM...
 python "scripts\apply_sources.py"
 if errorlevel 1 goto :fail
 
-echo [3/6] Uprawnienia Android...
+echo [3/6] Nazwa, ikona i uprawnienia Android...
 python "scripts\patch_android.py"
 if errorlevel 1 goto :fail
 
@@ -53,12 +53,12 @@ if errorlevel 1 goto :fail
 set "APK=build\app\outputs\flutter-apk\app-debug.apk"
 if not exist "%APK%" goto :fail
 
-copy /Y "%APK%" "Cidex_Mobile.apk" >nul
+copy /Y "%APK%" "WMM.apk" >nul
 
 echo.
 echo ================================================
 echo GOTOWE:
-echo   %CD%\Cidex_Mobile.apk
+echo   %CD%\WMM.apk
 echo ================================================
 echo.
 pause
@@ -66,7 +66,7 @@ exit /b 0
 
 :fail
 echo.
-echo [BLAD] Build APK nie powiodl sie.
+echo [BLAD] Build WMM APK nie powiodl sie.
 echo Uruchom flutter doctor -v i sprawdz komunikaty powyzej.
 pause
 exit /b 1
