@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
-title CIDEX Mobile - emulator Android
+title Warsztat Menager Mobile - emulator Android
 
 cd /d "%~dp0\.."
 
@@ -23,7 +23,7 @@ if not exist "android\" (
   if errorlevel 1 goto :fail
 )
 
-echo Wgrywanie aktualnej wersji CIDEX Mobile...
+echo Wgrywanie aktualnej wersji WMM...
 python "scripts\apply_sources.py"
 if errorlevel 1 goto :fail
 python "scripts\patch_android.py"
@@ -76,7 +76,7 @@ if not defined DEVICE (
   )
 
   echo Uruchamiam emulator: !AVD!
-  start "CIDEX Android Emulator" "%EMU%" -avd "!AVD!"
+  start "WMM Android Emulator" "%EMU%" -avd "!AVD!"
   echo Czekam na uruchomienie Androida...
   "%ADB%" wait-for-device
 
@@ -92,8 +92,8 @@ if not defined DEVICE (
 
 echo.
 echo Emulator gotowy: %DEVICE%
-echo CIDEX API dla emulatora: http://10.0.2.2:8765
-echo Uruchamiam CIDEX Mobile...
+echo Serwer WMM dla emulatora: http://10.0.2.2:8765
+echo Uruchamiam Warsztat Menager Mobile...
 echo.
 call "%FLUTTER%" run -d %DEVICE%
 if errorlevel 1 goto :fail
@@ -103,6 +103,6 @@ exit /b 0
 
 :fail
 echo.
-echo [BLAD] Nie udalo sie uruchomic CIDEX Mobile.
+echo [BLAD] Nie udalo sie uruchomic WMM.
 pause
 exit /b 1
