@@ -26,6 +26,8 @@ if not exist "android\" (
 echo Wgrywanie aktualnej wersji WMM...
 python "scripts\apply_sources.py"
 if errorlevel 1 goto :fail
+python "scripts\apply_wmm_login.py"
+if errorlevel 1 goto :fail
 python "scripts\patch_android.py"
 if errorlevel 1 goto :fail
 call "%FLUTTER%" pub get
@@ -92,7 +94,7 @@ if not defined DEVICE (
 
 echo.
 echo Emulator gotowy: %DEVICE%
-echo Serwer WMM dla emulatora: http://10.0.2.2:8765
+echo Warsztat Menager dla emulatora: http://10.0.2.2:8765
 echo Uruchamiam Warsztat Menager Mobile...
 echo.
 call "%FLUTTER%" run -d %DEVICE%
