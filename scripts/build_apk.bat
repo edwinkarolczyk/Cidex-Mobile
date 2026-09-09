@@ -33,6 +33,8 @@ if not exist "android\" (
 echo [2/6] Wgrywanie aktualnych zrodel WMM...
 python "scripts\apply_sources.py"
 if errorlevel 1 goto :fail
+python "scripts\apply_wmm_login.py"
+if errorlevel 1 goto :fail
 
 echo [3/6] Nazwa, ikona i uprawnienia Android...
 python "scripts\patch_android.py"
