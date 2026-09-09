@@ -148,6 +148,7 @@ HEADERS_NEW = """  Map<String, String> get headers => {
 """
 
 SETTINGS_METHOD_NEEDLE = """  Future<void> save() async {
+    final value = current();
 """
 
 SETTINGS_METHOD_REPLACEMENT = """  Future<void> scanPairingQr() async {
@@ -164,6 +165,7 @@ SETTINGS_METHOD_REPLACEMENT = """  Future<void> scanPairingQr() async {
   }
 
   Future<void> save() async {
+    final value = current();
 """
 
 SETTINGS_CARD_NEEDLE = """          const SizedBox(height: 14),
