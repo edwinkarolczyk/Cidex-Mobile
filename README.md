@@ -1,38 +1,28 @@
-# CIDEX Mobile
+# Warsztat Menager Mobile — WMM
 
-CIDEX Mobile to osobna aplikacja Android współpracująca z programem CIDEX na komputerze. Nie zmienia kodu ani konstrukcji Warsztat Menager i nie otwiera bezpośrednio plików `WM_ROOT` z telefonu.
+**Warsztat Menager Mobile (WMM)** to aplikacja Android dla Warsztat Menager. Repozytorium techniczne pozostaje `edwinkarolczyk/Cidex-Mobile`, a komunikacja z komputerem nadal odbywa się przez istniejący **CIDEX API** — zmieniony został branding, nazwa aplikacji i wygląd mobilny.
 
-## Aktualny zakres v0.3
+WMM nie zmienia kodu ani konstrukcji Warsztat Menager i nie otwiera bezpośrednio plików `WM_ROOT` z telefonu.
 
-- zaakceptowany ciemny, kolorowy interfejs z dużymi zaokrąglonymi kaflami,
-- połączenie z lokalnym `CIDEX API`,
-- zapamiętanie adresu API i tokenu na telefonie,
-- Planista — podgląd aktualnych zleceń z WM,
-- Planista — dodawanie nowego zlecenia z telefonu,
-- produkt wybierany z aktualnej kartoteki produktów WM,
-- walidacja Zlecenia wew, produktu i ilości przed zapisem,
-- opcjonalna data wysyłki z kalendarza i uwagi,
-- Maszyny — aktualna lista i wyszukiwarka,
-- skanowanie prawdziwych kodów QR aparatem,
-- ręczne wpisanie ID / treści QR do testów w emulatorze,
-- otwarcie karty maszyny na podstawie istniejącego ID WM,
-- podgląd statusu, hali, lokalizacji i terminu przeglądu,
-- `Dodaj zdjęcie` — aparat lub galeria,
-- `Zgłoś awarię` — wymagany opis,
-- `Dodaj uwagę`,
-- `Serwis / przegląd` — wymagany opis,
-- `Oznacz jako sprawną`,
-- podgląd zdjęć zapisanych przy maszynie,
-- autor zapisów mobilnych: `Cidex`.
+## Aktualny zakres v0.4
 
-Zlecenia, zdjęcia i zmiany nie są zapisywane w telefonie jako osobny model danych. Aplikacja wysyła operację do CIDEX na komputerze, a CIDEX zapisuje ją zgodnie z istniejącą strukturą WM.
+- nazwa aplikacji: **Warsztat Menager Mobile**,
+- skrót w interfejsie: **WMM**,
+- ciemny motyw zgodny z Warsztat Menager: czarne/grafitowe tło, pomarańczowy akcent i kolory tylko dla statusów,
+- znak aplikacji w stylu WM: szare koło zębate + pomarańczowy klucz + ciemny element karty/serwisu,
+- Planista — podgląd zleceń i dodawanie nowego zlecenia z telefonu,
+- produkt wybierany z bieżącej kartoteki WM,
+- Maszyny — lista, wyszukiwarka i karta maszyny,
+- skan QR po istniejącym ID maszyny,
+- dodawanie zdjęcia z aparatu lub galerii,
+- zgłoszenie awarii, uwagi i serwisu/przeglądu,
+- oznaczenie maszyny jako sprawnej,
+- połączenie przez Wi-Fi/LAN z kontrolowanym API na komputerze.
 
-Nowe zlecenie z telefonu korzysta z tego samego bezpiecznego mechanizmu `add_order` co CIDEX PC. CIDEX nie tworzy przy tym rezerwacji materiałowych, nie zmienia magazynu i nie tworzy nowych pól w modelu WM.
-
-## Przepływ
+## Architektura
 
 ```text
-CIDEX Mobile (Android)
+Warsztat Menager Mobile (WMM)
         |
         | Wi-Fi / LAN
         v
@@ -42,21 +32,19 @@ CIDEX API na komputerze
 WM_ROOT/data
 ```
 
-## Planista — dodanie zlecenia z telefonu
+Repozytorium `Cidex-Mobile`, techniczny pakiet Flutter `cidex_mobile`, nagłówek `X-Cidex-Token` i backend CIDEX pozostają bez zmiany, żeby nie zrywać zgodności. W aplikacji użytkownik widzi nazwę **WMM / Warsztat Menager Mobile**.
 
-W ekranie `Planista` użyj pomarańczowego przycisku `DODAJ ZLECENIE`.
+## Token
 
-Formularz zawiera:
+CIDEX generuje dla WMM krótki token **6-znakowy**, np.:
 
-- `Zlecenie wew` — wymagane,
-- `Produkt` — wymagany, wybierany z bieżącej kartoteki WM,
-- `Ilość` — wymagana, większa od zera,
-- `Data wysyłki` — opcjonalna,
-- `Uwagi` — opcjonalne.
+```text
+7K4M2P
+```
 
-Przy najważniejszych polach jest kontekstowa pomoc. Po poprawnym zapisie lista Planisty jest odświeżana, a wpis w historii zlecenia ma autora `Cidex`.
+Używane są duże litery i cyfry bez najbardziej mylących znaków. Po aktualizacji stary długi token zostanie jednorazowo zastąpiony nowym 6-znakowym kodem — trzeba wtedy wpisać nowy token w ustawieniach WMM.
 
-## 1. Przygotowanie CIDEX na komputerze
+## Uruchomienie po stronie komputera
 
 W repo `edwinkarolczyk/Cidex`:
 
@@ -65,72 +53,33 @@ git pull
 run.bat
 ```
 
-W zwykłym CIDEX ustaw poprawny `WM_ROOT`. Potem uruchom:
+W CIDEX ustaw poprawny `WM_ROOT`, a potem uruchom Mobile API z programu albo:
 
 ```bat
 run_api.bat
 ```
 
-Serwer pokaże m.in. adres telefonu i token:
+Serwer pokaże adres telefonu oraz token.
 
-```text
-Emulator Android: http://10.0.2.2:8765
-Telefon w LAN:    http://192.168.x.x:8765
-Token:            ...
-```
+## Telefon
 
-Przy pytaniu Zapory systemu Windows zezwalaj wyłącznie dla sieci prywatnych / firmowych.
-
-## 2. Emulator Android
-
-```bat
-git clone https://github.com/edwinkarolczyk/Cidex-Mobile.git
-cd Cidex-Mobile
-scripts\setup_windows.bat
-scripts\prepare_project.bat
-scripts\run_emulator.bat
-```
-
-W aplikacji wejdź w ikonę ustawień i wpisz:
-
-```text
-Adres: http://10.0.2.2:8765
-Token: wartość pokazana przez CIDEX API
-```
-
-Naciśnij `TESTUJ POŁĄCZENIE`, następnie `ZAPISZ`.
-
-Emulator może nie mieć wygodnego obrazu z prawdziwego aparatu, dlatego ekran QR ma też pole ręcznego testu. Można wpisać np.:
-
-```text
-CIDEX:MACHINE:42
-```
-
-albo samo:
-
-```text
-42
-```
-
-## 3. Prawdziwy telefon Android
-
-Telefon i komputer muszą być w tej samej sieci Wi-Fi/LAN. W ustawieniach aplikacji zamiast `10.0.2.2` wpisz adres LAN pokazany przez `run_api.bat`, np.:
+Telefon i komputer muszą być w tej samej sieci Wi-Fi/LAN. W ustawieniach WMM wpisz adres komputera, np.:
 
 ```text
 http://192.168.1.50:8765
 ```
 
-Wtedy działa prawdziwy aparat QR, robienie i wysyłanie zdjęć oraz zapis zleceń Planisty przez CIDEX API.
+oraz aktualny 6-znakowy token. Następnie użyj `TESTUJ POŁĄCZENIE` i `ZAPISZ`.
 
-## Kod QR maszyny
+## QR maszyny
 
-CIDEX używa istniejącego identyfikatora maszyny z WM. Zalecana treść QR:
+Techniczny format QR pozostaje zgodny z CIDEX:
 
 ```text
 CIDEX:MACHINE:42
 ```
 
-Nie jest tworzony nowy identyfikator maszyny. Dla kompatybilności API rozpoznaje też m.in. samo `42` i `cidex://machine/42`.
+WMM rozpoznaje też samo ID, np. `42`. Nie jest tworzony nowy identyfikator maszyny.
 
 ## Build APK
 
@@ -138,46 +87,32 @@ Nie jest tworzony nowy identyfikator maszyny. Dla kompatybilności API rozpoznaj
 scripts\build_apk.bat
 ```
 
-Po udanym buildzie:
+Po udanym buildzie powstaje:
 
 ```text
-Cidex_Mobile.apk
+WMM.apk
 ```
 
-Build zawsze kopiuje aktualne pliki z `template/`, ustawia uprawnienia `INTERNET` i `CAMERA`, wykonuje analizę i test, a dopiero potem buduje APK.
+GitHub Actions publikuje artefakt **`WMM-apk`** z plikiem `WMM.apk`.
 
 ## Instalacja przez USB
-
-Włącz `Opcje programistyczne -> Debugowanie USB`, podłącz telefon i uruchom:
 
 ```bat
 scripts\install_phone.bat
 ```
 
-## GitHub Actions
+Skrypt instaluje `WMM.apk` na podłączonym telefonie.
 
-Workflow `Build CIDEX Mobile APK` automatycznie:
+## Bezpieczeństwo i zgodność
 
-1. tworzy projekt Android,
-2. składa aktualne źródła aplikacji,
-3. dodaje wymagane uprawnienia,
-4. pobiera zależności,
-5. wykonuje `flutter analyze`,
-6. wykonuje testy Flutter,
-7. buduje debug APK,
-8. publikuje artefakt `Cidex-Mobile-apk` z plikiem `Cidex_Mobile.apk`.
-
-## Bezpieczeństwo
-
-- endpointy `/api/v1/...` wymagają tokenu `X-Cidex-Token`,
-- telefon nie dostaje bezpośredniego dostępu do udziału z `WM_ROOT`,
-- nowe zlecenie jest tworzone przez istniejący mechanizm CIDEX bez rezerwacji materiałowych,
+- telefon nie dostaje bezpośredniego dostępu do udziału `WM_ROOT`,
+- endpointy nadal wymagają technicznego nagłówka `X-Cidex-Token`,
+- nowe zlecenia nie tworzą automatycznych rezerwacji materiałowych,
 - CIDEX nie usuwa automatycznie zleceń,
-- zdjęcia są ograniczone rozmiarem po stronie CIDEX,
-- zmiany statusu i zdjęcia używają istniejącego modelu Maszyn WM,
+- zdjęcia są ograniczone rozmiarem po stronie backendu,
 - Awaria i Serwis / przegląd wymagają opisu,
-- autor zapisu to `Cidex`.
+- techniczny autor zapisu w danych WM pozostaje `Cidex`, aby zachować zgodność z istniejącym mechanizmem historii.
 
-## Co pozostaje przed oznaczeniem 100% produkcyjnym
+## Odbiór produkcyjny
 
-Kod, testy automatyczne i budowa APK mogą zostać zweryfikowane w CI. Ostatni etap odbioru wymaga testu na kopii aktualnego `WM_ROOT` oraz na rzeczywistym telefonie lub emulatorze połączonym z komputerem z CIDEX API. Dopiero po takim teście należy podłączać zapis do właściwych danych produkcyjnych WM.
+Przed podłączeniem do właściwego `WM_ROOT` wykonaj pełny test na jego kopii: Planista, maszyna po QR, uwaga, awaria, serwis i zdjęcie. Kod WM pozostaje niezależny i nie jest przez WMM/CIDEX modyfikowany.
