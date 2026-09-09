@@ -31,9 +31,8 @@ if not exist "android\" (
 )
 
 echo [2/6] Wgrywanie aktualnych zrodel CIDEX Mobile...
-if not exist "lib" mkdir "lib"
-copy /Y "template\main.dart" "lib\main.dart" >nul
-copy /Y "template\pubspec.yaml" "pubspec.yaml" >nul
+python "scripts\apply_sources.py"
+if errorlevel 1 goto :fail
 
 echo [3/6] Uprawnienia Android...
 python "scripts\patch_android.py"
@@ -44,7 +43,7 @@ call "%FLUTTER%" pub get
 if errorlevel 1 goto :fail
 
 echo [5/6] Analiza kodu...
-call "%FLUTTER%" analyze
+call "%FLUTTER%" analyze lib\main.dart test\widget_test.dart
 if errorlevel 1 goto :fail
 
 echo [6/6] Budowanie APK debug...
