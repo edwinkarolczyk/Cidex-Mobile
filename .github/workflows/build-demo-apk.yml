@@ -25,6 +25,7 @@ jobs:
       - name: Apply WMM sources
         run: |
           python scripts/apply_sources.py
+          python scripts/apply_wmm_login.py
           python scripts/patch_android.py
 
       - name: Get packages
