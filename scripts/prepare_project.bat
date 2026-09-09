@@ -30,10 +30,9 @@ if not exist "android\" (
   echo [1/4] Folder android juz istnieje - pomijam generowanie.
 )
 
-echo [2/4] Wgrywanie CIDEX Mobile...
-if not exist "lib" mkdir "lib"
-copy /Y "template\main.dart" "lib\main.dart" >nul
-copy /Y "template\pubspec.yaml" "pubspec.yaml" >nul
+echo [2/4] Wgrywanie aktualnych zrodel CIDEX Mobile...
+python "scripts\apply_sources.py"
+if errorlevel 1 goto :fail
 
 echo [3/4] Ustawianie INTERNET, CAMERA i lokalnego HTTP...
 python "scripts\patch_android.py"
