@@ -24,15 +24,17 @@ jobs:
 
       - name: Apply CIDEX Mobile sources
         run: |
-          cp template/main.dart lib/main.dart
-          cp template/pubspec.yaml pubspec.yaml
+          python scripts/apply_sources.py
           python scripts/patch_android.py
 
       - name: Get packages
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze lib/main.dart test/widget_test.dart
+
+      - name: Test
+        run: flutter test test/widget_test.dart
 
       - name: Build debug APK
         run: flutter build apk --debug
