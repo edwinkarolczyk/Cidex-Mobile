@@ -1,3 +1,39 @@
+Timer? _wmmHeartbeatTimer;
+String _wmmSessionId = '';
+
+Future<void> _wmmHeartbeat(ApiConfig config) async {
+  final sessionId = _wmmSessionId.trim();
+  if (sessionId.isEmpty) return;
+  final base = config.baseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
+  try {
+    await http
+        .post(
+          Uri.parse('$base/api/v1/mobile/heartbeat'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json; charset=utf-8',
+            if (config.token.trim().isNotEmpty) 'X-WMM-Key': config.token.trim(),
+          },
+          body: jsonEncode({'session_id': sessionId}),
+        )
+        .timeout(const Duration(seconds: 8));
+  } catch (_) {
+    // Krótki brak sieci nie wylogowuje użytkownika. WM sam wygasi starą sesję.
+  }
+}
+
+void _startWmmPresence(ApiConfig config, String sessionId, int heartbeatSeconds) {
+  _wmmHeartbeatTimer?.cancel();
+  _wmmSessionId = sessionId.trim();
+  if (_wmmSessionId.isEmpty) return;
+  final seconds = heartbeatSeconds.clamp(15, 60);
+  _wmmHeartbeat(config);
+  _wmmHeartbeatTimer = Timer.periodic(
+    Duration(seconds: seconds),
+    (_) => _wmmHeartbeat(config),
+  );
+}
+
 class WmmLoginGate extends StatefulWidget {
   const WmmLoginGate({super.key, required this.initialConfig});
 
@@ -88,8 +124,15 @@ class _WmmLoginGateState extends State<WmmLoginGate> {
       }
 
       final user = Map<String, dynamic>.from(payload['user'] as Map? ?? const {});
+      final sessionId = (payload['session_id'] ?? '').toString().trim();
+      final heartbeatSeconds = int.tryParse((payload['heartbeat_seconds'] ?? '30').toString()) ?? 30;
+      if (sessionId.isEmpty) {
+        throw ApiException('WM nie zwrócił sesji WMM. Zaktualizuj Warsztat Menager.');
+      }
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('wmm_last_login', userLogin);
+      _startWmmPresence(config, sessionId, heartbeatSeconds);
 
       // PIN nie jest zapisywany na telefonie.
       pin.clear();
