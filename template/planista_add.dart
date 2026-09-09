@@ -210,7 +210,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
                 )
               else
                 DropdownButtonFormField<String>(
-                  value: selectedProduct.isEmpty ? null : selectedProduct,
+                  initialValue: selectedProduct.isEmpty ? null : selectedProduct,
                   isExpanded: true,
                   decoration: const InputDecoration(prefixIcon: Icon(Icons.inventory_2_outlined)),
                   hint: const Text('Wybierz produkt'),
