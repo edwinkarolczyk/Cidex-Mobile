@@ -1,4 +1,4 @@
-name: Build demo APK
+name: Build CIDEX Mobile APK
 
 on:
   push:
@@ -26,6 +26,7 @@ jobs:
         run: |
           cp template/main.dart lib/main.dart
           cp template/pubspec.yaml pubspec.yaml
+          python scripts/patch_android.py
 
       - name: Get packages
         run: flutter pub get
@@ -37,11 +38,11 @@ jobs:
         run: flutter build apk --debug
 
       - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-debug.apk Cidex_Mobile_demo.apk
+        run: cp build/app/outputs/flutter-apk/app-debug.apk Cidex_Mobile.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Cidex-Mobile-demo-apk
-          path: Cidex_Mobile_demo.apk
+          name: Cidex-Mobile-apk
+          path: Cidex_Mobile.apk
           if-no-files-found: error
