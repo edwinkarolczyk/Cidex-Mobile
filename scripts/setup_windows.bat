@@ -1,9 +1,9 @@
 @echo off
 setlocal EnableExtensions
-title CIDEX Mobile - przygotowanie Windows
+title Warsztat Menager Mobile - przygotowanie Windows
 
 echo ================================================
-echo   CIDEX Mobile - Flutter + Android
+echo   WMM - Flutter + Android
 echo ================================================
 echo.
 
@@ -68,6 +68,6 @@ exit /b 0
 
 :fail
 echo.
-echo [BLAD] Nie udalo sie przygotowac srodowiska.
+echo [BLAD] Nie udalo sie przygotowac srodowiska WMM.
 pause
 exit /b 1
