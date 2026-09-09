@@ -2,12 +2,16 @@
 
 CIDEX Mobile to osobna aplikacja Android współpracująca z programem CIDEX na komputerze. Nie zmienia kodu ani konstrukcji Warsztat Menager i nie otwiera bezpośrednio plików `WM_ROOT` z telefonu.
 
-## Aktualny zakres v0.2
+## Aktualny zakres v0.3
 
 - zaakceptowany ciemny, kolorowy interfejs z dużymi zaokrąglonymi kaflami,
 - połączenie z lokalnym `CIDEX API`,
 - zapamiętanie adresu API i tokenu na telefonie,
 - Planista — podgląd aktualnych zleceń z WM,
+- Planista — dodawanie nowego zlecenia z telefonu,
+- produkt wybierany z aktualnej kartoteki produktów WM,
+- walidacja Zlecenia wew, produktu i ilości przed zapisem,
+- opcjonalna data wysyłki z kalendarza i uwagi,
 - Maszyny — aktualna lista i wyszukiwarka,
 - skanowanie prawdziwych kodów QR aparatem,
 - ręczne wpisanie ID / treści QR do testów w emulatorze,
@@ -21,7 +25,9 @@ CIDEX Mobile to osobna aplikacja Android współpracująca z programem CIDEX na 
 - podgląd zdjęć zapisanych przy maszynie,
 - autor zapisów mobilnych: `Cidex`.
 
-Zdjęcia i zmiany nie są zapisywane w telefonie jako osobny model danych. Aplikacja wysyła operację do CIDEX na komputerze, a CIDEX zapisuje ją zgodnie z istniejącą strukturą WM.
+Zlecenia, zdjęcia i zmiany nie są zapisywane w telefonie jako osobny model danych. Aplikacja wysyła operację do CIDEX na komputerze, a CIDEX zapisuje ją zgodnie z istniejącą strukturą WM.
+
+Nowe zlecenie z telefonu korzysta z tego samego bezpiecznego mechanizmu `add_order` co CIDEX PC. CIDEX nie tworzy przy tym rezerwacji materiałowych, nie zmienia magazynu i nie tworzy nowych pól w modelu WM.
 
 ## Przepływ
 
@@ -35,6 +41,20 @@ CIDEX API na komputerze
         v
 WM_ROOT/data
 ```
+
+## Planista — dodanie zlecenia z telefonu
+
+W ekranie `Planista` użyj pomarańczowego przycisku `DODAJ ZLECENIE`.
+
+Formularz zawiera:
+
+- `Zlecenie wew` — wymagane,
+- `Produkt` — wymagany, wybierany z bieżącej kartoteki WM,
+- `Ilość` — wymagana, większa od zera,
+- `Data wysyłki` — opcjonalna,
+- `Uwagi` — opcjonalne.
+
+Przy najważniejszych polach jest kontekstowa pomoc. Po poprawnym zapisie lista Planisty jest odświeżana, a wpis w historii zlecenia ma autora `Cidex`.
 
 ## 1. Przygotowanie CIDEX na komputerze
 
@@ -100,7 +120,7 @@ Telefon i komputer muszą być w tej samej sieci Wi-Fi/LAN. W ustawieniach aplik
 http://192.168.1.50:8765
 ```
 
-Wtedy działa prawdziwy aparat QR oraz robienie i wysyłanie zdjęć.
+Wtedy działa prawdziwy aparat QR, robienie i wysyłanie zdjęć oraz zapis zleceń Planisty przez CIDEX API.
 
 ## Kod QR maszyny
 
@@ -124,7 +144,7 @@ Po udanym buildzie:
 Cidex_Mobile.apk
 ```
 
-Build zawsze kopiuje aktualne pliki z `template/`, ustawia uprawnienia `INTERNET` i `CAMERA`, wykonuje `flutter analyze`, a dopiero potem buduje APK.
+Build zawsze kopiuje aktualne pliki z `template/`, ustawia uprawnienia `INTERNET` i `CAMERA`, wykonuje analizę i test, a dopiero potem buduje APK.
 
 ## Instalacja przez USB
 
@@ -139,18 +159,25 @@ scripts\install_phone.bat
 Workflow `Build CIDEX Mobile APK` automatycznie:
 
 1. tworzy projekt Android,
-2. wgrywa aktualny interfejs,
+2. składa aktualne źródła aplikacji,
 3. dodaje wymagane uprawnienia,
 4. pobiera zależności,
 5. wykonuje `flutter analyze`,
-6. buduje debug APK,
-7. publikuje artefakt `Cidex-Mobile-apk` z plikiem `Cidex_Mobile.apk`.
+6. wykonuje testy Flutter,
+7. buduje debug APK,
+8. publikuje artefakt `Cidex-Mobile-apk` z plikiem `Cidex_Mobile.apk`.
 
 ## Bezpieczeństwo
 
 - endpointy `/api/v1/...` wymagają tokenu `X-Cidex-Token`,
 - telefon nie dostaje bezpośredniego dostępu do udziału z `WM_ROOT`,
+- nowe zlecenie jest tworzone przez istniejący mechanizm CIDEX bez rezerwacji materiałowych,
+- CIDEX nie usuwa automatycznie zleceń,
 - zdjęcia są ograniczone rozmiarem po stronie CIDEX,
 - zmiany statusu i zdjęcia używają istniejącego modelu Maszyn WM,
 - Awaria i Serwis / przegląd wymagają opisu,
 - autor zapisu to `Cidex`.
+
+## Co pozostaje przed oznaczeniem 100% produkcyjnym
+
+Kod, testy automatyczne i budowa APK mogą zostać zweryfikowane w CI. Ostatni etap odbioru wymaga testu na kopii aktualnego `WM_ROOT` oraz na rzeczywistym telefonie lub emulatorze połączonym z komputerem z CIDEX API. Dopiero po takim teście należy podłączać zapis do właściwych danych produkcyjnych WM.
