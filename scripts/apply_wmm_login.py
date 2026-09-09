@@ -6,6 +6,13 @@ def main() -> None:
     login_template = Path('template/wmm_login.dart')
 
     source = main_file.read_text(encoding='utf-8')
+    if "import 'dart:async';\n" not in source:
+        source = source.replace(
+            "import 'dart:convert';\n",
+            "import 'dart:async';\nimport 'dart:convert';\n",
+            1,
+        )
+
     needle = '      home: HomeScreen(initialConfig: initialConfig),\n'
     replacement = '      home: WmmLoginGate(initialConfig: initialConfig),\n'
     if needle not in source:
