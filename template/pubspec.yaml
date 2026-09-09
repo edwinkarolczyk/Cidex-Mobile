@@ -1,7 +1,7 @@
 name: cidex_mobile
-description: Warsztat Menager Mobile (WMM) - aplikacja Android korzystająca z CIDEX API
+description: Warsztat Menager Mobile (WMM) - aplikacja Android do bezpośredniej współpracy z Warsztat Menager
 publish_to: "none"
-version: 0.4.0+4
+version: 0.5.0+5
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
