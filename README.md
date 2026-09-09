@@ -1,85 +1,89 @@
 # Warsztat Menager Mobile — WMM
 
-**Warsztat Menager Mobile (WMM)** to aplikacja Android dla Warsztat Menager. Repozytorium techniczne pozostaje `edwinkarolczyk/Cidex-Mobile`, a komunikacja z komputerem nadal odbywa się przez istniejący **CIDEX API** — zmieniony został branding, nazwa aplikacji i wygląd mobilny.
+**Warsztat Menager Mobile (WMM)** to aplikacja Android przeznaczona do pracy bezpośrednio z Warsztat Menager przez lokalne WM API. Telefon nie otwiera plików `WM_ROOT` samodzielnie — wszystkie odczyty i zapisy przechodzą przez kontrolowane API programu WM.
 
-WMM nie zmienia kodu ani konstrukcji Warsztat Menager i nie otwiera bezpośrednio plików `WM_ROOT` z telefonu.
+Repozytorium techniczne na razie nadal ma nazwę `edwinkarolczyk/Cidex-Mobile`; można je później przemianować na `Warsztat-Menager-Mobile` bez zmiany założeń aplikacji. Stary backend CIDEX pozostaje tylko jako przejściowa kompatybilność podczas migracji do WM API.
 
-## Aktualny zakres v0.4
+## Aktualny zakres v0.5
 
-- nazwa aplikacji: **Warsztat Menager Mobile**,
-- skrót w interfejsie: **WMM**,
-- ciemny motyw zgodny z Warsztat Menager: czarne/grafitowe tło, pomarańczowy akcent i kolory tylko dla statusów,
-- znak aplikacji w stylu WM: szare koło zębate + pomarańczowy klucz + ciemny element karty/serwisu,
-- Planista — podgląd zleceń i dodawanie nowego zlecenia z telefonu,
-- produkt wybierany z bieżącej kartoteki WM,
-- Maszyny — lista, wyszukiwarka i karta maszyny,
-- skan QR po istniejącym ID maszyny,
-- dodawanie zdjęcia z aparatu lub galerii,
-- zgłoszenie awarii, uwagi i serwisu/przeglądu,
-- oznaczenie maszyny jako sprawnej,
-- połączenie przez Wi-Fi/LAN z kontrolowanym API na komputerze.
+- branding **Warsztat Menager Mobile / WMM**,
+- ciemny motyw zgodny z WM: grafit/czerń + pomarańczowy akcent,
+- połączenie z komputerem przez Wi‑Fi/LAN,
+- skanowanie QR połączenia z WM zamiast ręcznego przepisywania hosta i klucza,
+- zachowanie ręcznego adresu/klucza jako opcji awaryjnej,
+- Planista: podgląd i dodanie zlecenia,
+- Maszyny: lista, wyszukiwanie, karta, QR, statusy, uwaga, serwis/awaria,
+- Maszyny: zdjęcia z aparatu lub galerii i podgląd zdjęć z WM,
+- Narzędzia: lista, karta, statusy i obsługa zdjęć przygotowana pod WM API,
+- Dyspozycje: mobilny podgląd przygotowany pod WM API,
+- Magazyn: mobilny podgląd stanów przygotowany pod WM API,
+- brak mobilnej zakładki historii — WMM pokazuje tylko dane potrzebne na hali.
 
-## Architektura
+## Docelowa architektura
 
 ```text
 Warsztat Menager Mobile (WMM)
         |
         | Wi-Fi / LAN
         v
-CIDEX API na komputerze
+WM API uruchomione przez Warsztat Menager
         |
         v
 WM_ROOT/data
 ```
 
-Repozytorium `Cidex-Mobile`, techniczny pakiet Flutter `cidex_mobile`, nagłówek `X-Cidex-Token` i backend CIDEX pozostają bez zmiany, żeby nie zrywać zgodności. W aplikacji użytkownik widzi nazwę **WMM / Warsztat Menager Mobile**.
-
-## Token
-
-CIDEX generuje dla WMM krótki token **6-znakowy**, np.:
+WMM nie ma własnej bazy będącej źródłem prawdy. Połączenie z WM ma być zestawiane przez QR generowany na komputerze, np.:
 
 ```text
-7K4M2P
+WMM://CONNECT?host=192.168.1.50&port=8765&key=AB12CD
 ```
 
-Używane są duże litery i cyfry bez najbardziej mylących znaków. Po aktualizacji stary długi token zostanie jednorazowo zastąpiony nowym 6-znakowym kodem — trzeba wtedy wpisać nowy token w ustawieniach WMM.
+Telefon odczytuje host, port i klucz automatycznie. Użytkownik nie musi wpisywać tokenów ani adresu ręcznie.
 
-## Uruchomienie po stronie komputera
+## Kompatybilność przejściowa
 
-W repo `edwinkarolczyk/Cidex`:
-
-```bat
-git pull
-run.bat
-```
-
-W CIDEX ustaw poprawny `WM_ROOT`, a potem uruchom Mobile API z programu albo:
-
-```bat
-run_api.bat
-```
-
-Serwer pokaże adres telefonu oraz token.
-
-## Telefon
-
-Telefon i komputer muszą być w tej samej sieci Wi-Fi/LAN. W ustawieniach WMM wpisz adres komputera, np.:
+Do czasu wdrożenia WM API aplikacja wysyła dwa nagłówki z tym samym kluczem:
 
 ```text
-http://192.168.1.50:8765
+X-WMM-Key
+X-Cidex-Token
 ```
 
-oraz aktualny 6-znakowy token. Następnie użyj `TESTUJ POŁĄCZENIE` i `ZAPISZ`.
+Pierwszy jest docelowy dla WM. Drugi pozwala nadal testować funkcje Maszyn/Planisty na obecnym backendzie CIDEX podczas migracji. Po uruchomieniu kompletnego WM API nagłówek CIDEX będzie można usunąć.
 
-## QR maszyny
+## Zdjęcia — priorytet WMM
 
-Techniczny format QR pozostaje zgodny z CIDEX:
+Zdjęcia są jedną z głównych funkcji aplikacji. Docelowy przepływ:
 
 ```text
-CIDEX:MACHINE:42
+WMM
+ -> wybór / QR maszyny albo narzędzia
+ -> aparat lub galeria
+ -> kompresja po stronie telefonu
+ -> WM API
+ -> właściwy katalog/rekord w WM_ROOT
+ -> natychmiastowy podgląd w WM i WMM
 ```
 
-WMM rozpoznaje też samo ID, np. `42`. Nie jest tworzony nowy identyfikator maszyny.
+WMM nie zapisuje zdjęć bezpośrednio do udziału sieciowego. O właściwe miejsce, nazwę pliku i powiązanie z obiektem odpowiada WM API.
+
+## Zakres mobilny
+
+WMM ma obejmować funkcje potrzebne pracownikowi i brygadziście na hali, a nie kopiować cały desktopowy WM.
+
+W aplikacji pozostają przede wszystkim:
+
+- Maszyny,
+- Narzędzia,
+- Zlecenia / Planista,
+- Dyspozycje,
+- Magazyn w uproszczonym zakresie,
+- QR,
+- zdjęcia,
+- statusy,
+- proste uwagi i operacje wykonawcze.
+
+Nie przenosimy do telefonu pełnej historii, ciężkiej administracji systemowej ani technicznych ekranów konfiguracji.
 
 ## Build APK
 
@@ -93,7 +97,7 @@ Po udanym buildzie powstaje:
 WMM.apk
 ```
 
-GitHub Actions publikuje artefakt **`WMM-apk`** z plikiem `WMM.apk`.
+GitHub Actions publikuje artefakt `WMM-apk`.
 
 ## Instalacja przez USB
 
@@ -101,18 +105,6 @@ GitHub Actions publikuje artefakt **`WMM-apk`** z plikiem `WMM.apk`.
 scripts\install_phone.bat
 ```
 
-Skrypt instaluje `WMM.apk` na podłączonym telefonie.
+## Najbliższy krok po stronie WM
 
-## Bezpieczeństwo i zgodność
-
-- telefon nie dostaje bezpośredniego dostępu do udziału `WM_ROOT`,
-- endpointy nadal wymagają technicznego nagłówka `X-Cidex-Token`,
-- nowe zlecenia nie tworzą automatycznych rezerwacji materiałowych,
-- CIDEX nie usuwa automatycznie zleceń,
-- zdjęcia są ograniczone rozmiarem po stronie backendu,
-- Awaria i Serwis / przegląd wymagają opisu,
-- techniczny autor zapisu w danych WM pozostaje `Cidex`, aby zachować zgodność z istniejącym mechanizmem historii.
-
-## Odbiór produkcyjny
-
-Przed podłączeniem do właściwego `WM_ROOT` wykonaj pełny test na jego kopii: Planista, maszyna po QR, uwaga, awaria, serwis i zdjęcie. Kod WM pozostaje niezależny i nie jest przez WMM/CIDEX modyfikowany.
+Żeby całkowicie odłożyć CIDEX PC, Warsztat Menager musi dostać własny mały serwer API uruchamiany razem z WM. Powinien wystawić ten sam kontrakt `/api/v1/...`, który konsumuje WMM, oraz ekran z hostem i QR połączenia. To jest osobny zakres zmian w repo WM i powinien zostać wykonany dopiero po osobnej akceptacji zmian w kodzie WM.
