@@ -1,7 +1,7 @@
 name: cidex_mobile
-description: CIDEX Mobile - demonstracyjna aplikacja Android dla Warsztat Menager
+description: CIDEX Mobile - aplikacja Android dla Warsztat Menager przez CIDEX API
 publish_to: "none"
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -9,6 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  http: ^1.5.0
+  image_picker: ^1.2.0
+  mobile_scanner: ^7.0.1
+  shared_preferences: ^2.5.3
 
 flutter:
   uses-material-design: true
