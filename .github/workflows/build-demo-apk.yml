@@ -30,7 +30,7 @@ jobs:
           python scripts/apply_beta.py
 
       - name: Add secure storage
-        run: flutter pub add flutter_secure_storage
+        run: flutter pub add flutter_secure_storage:9.2.4
 
       - name: Get packages
         run: flutter pub get
