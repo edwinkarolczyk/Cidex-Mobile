@@ -42,7 +42,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.5 --build-number 55
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.6 --build-number 56
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
