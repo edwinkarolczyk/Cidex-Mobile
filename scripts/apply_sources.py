@@ -195,7 +195,7 @@ HOME_REFRESH_NEEDLE = """  Future<void> refresh() async {
     setState(() => busy = true);
     try {
       if (config.token.trim().isEmpty) {
-        throw ApiException('Ustaw token z okna CIDEX API.');
+        throw ApiException('Połącz WMM z Warsztat Menager przez QR lub wpisz klucz połączenia.');
       }
       await api.info();
       final results = await Future.wait([api.orders(), api.machines()]);
@@ -212,7 +212,7 @@ HOME_REFRESH_NEEDLE = """  Future<void> refresh() async {
       if (!mounted) return;
       setState(() {
         connected = true;
-        connectionText = 'Połączono z CIDEX na komputerze';
+        connectionText = 'Połączono z Warsztat Menager';
         activeOrders = '$active';
         machinesAttention = '$attention';
         lastSync = TimeOfDay.now().format(context);
@@ -234,7 +234,7 @@ HOME_REFRESH_REPLACEMENT = """  Future<void> refresh() async {
     setState(() => busy = true);
     try {
       if (config.token.trim().isEmpty) {
-        throw ApiException('Ustaw token z okna CIDEX API.');
+        throw ApiException('Połącz WMM z Warsztat Menager przez QR lub wpisz klucz połączenia.');
       }
 
       // Stan połączenia zależy wyłącznie od endpointu informacyjnego.
@@ -243,7 +243,7 @@ HOME_REFRESH_REPLACEMENT = """  Future<void> refresh() async {
       if (!mounted) return;
       setState(() {
         connected = true;
-        connectionText = 'Połączono z CIDEX na komputerze';
+        connectionText = 'Połączono z Warsztat Menager';
         lastSync = TimeOfDay.now().format(context);
       });
 
