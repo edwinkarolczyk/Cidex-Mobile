@@ -1,5 +1,6 @@
 Timer? _wmmHeartbeatTimer;
 String _wmmSessionId = '';
+const FlutterSecureStorage _wmmSecureStorage = FlutterSecureStorage();
 
 Future<void> _wmmHeartbeat(ApiConfig config) async {
   final sessionId = _wmmSessionId.trim();
@@ -49,20 +50,51 @@ class _WmmLoginGateState extends State<WmmLoginGate> {
   final pin = TextEditingController();
   bool busy = false;
   bool obscurePin = true;
+  bool rememberLogin = true;
+  bool rememberPin = false;
   String error = '';
 
   @override
   void initState() {
     super.initState();
     config = widget.initialConfig;
-    _loadLastLogin();
+    _loadRememberedCredentials();
   }
 
-  Future<void> _loadLastLogin() async {
+  Future<void> _loadRememberedCredentials() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = (prefs.getString('wmm_last_login') ?? '').trim();
-    if (!mounted || value.isEmpty) return;
-    login.text = value;
+    final savedRememberLogin = prefs.getBool('wmm_remember_login') ?? true;
+    final savedRememberPin = prefs.getBool('wmm_remember_pin') ?? false;
+    final savedLogin = (prefs.getString('wmm_last_login') ?? '').trim();
+    String savedPin = '';
+    if (savedRememberPin) {
+      savedPin = (await _wmmSecureStorage.read(key: 'wmm_saved_pin') ?? '').trim();
+    }
+    if (!mounted) return;
+    setState(() {
+      rememberLogin = savedRememberLogin;
+      rememberPin = savedRememberPin && savedRememberLogin;
+      if (rememberLogin && savedLogin.isNotEmpty) login.text = savedLogin;
+      if (rememberPin && savedPin.isNotEmpty) pin.text = savedPin;
+    });
+  }
+
+  Future<void> _saveRememberedCredentials(String userLogin, String userPin) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('wmm_remember_login', rememberLogin);
+    await prefs.setBool('wmm_remember_pin', rememberPin);
+
+    if (rememberLogin) {
+      await prefs.setString('wmm_last_login', userLogin);
+    } else {
+      await prefs.remove('wmm_last_login');
+    }
+
+    if (rememberPin) {
+      await _wmmSecureStorage.write(key: 'wmm_saved_pin', value: userPin);
+    } else {
+      await _wmmSecureStorage.delete(key: 'wmm_saved_pin');
+    }
   }
 
   @override
@@ -130,12 +162,10 @@ class _WmmLoginGateState extends State<WmmLoginGate> {
         throw ApiException('WM nie zwrócił sesji WMM. Zaktualizuj Warsztat Menager.');
       }
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('wmm_last_login', userLogin);
+      await _saveRememberedCredentials(userLogin, userPin);
       _startWmmPresence(config, sessionId, heartbeatSeconds);
 
-      // PIN nie jest zapisywany na telefonie.
-      pin.clear();
+      if (!rememberPin) pin.clear();
       if (!mounted) return;
 
       await Navigator.of(context).pushReplacement(
@@ -238,6 +268,41 @@ class _WmmLoginGateState extends State<WmmLoginGate> {
                             ),
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        CheckboxListTile(
+                          value: rememberLogin,
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          activeColor: kOrange,
+                          title: const Text('Zapamiętaj login'),
+                          onChanged: busy
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    rememberLogin = value ?? false;
+                                    if (!rememberLogin) rememberPin = false;
+                                  });
+                                },
+                        ),
+                        CheckboxListTile(
+                          value: rememberPin,
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          activeColor: kOrange,
+                          title: const Text('Zapamiętaj PIN'),
+                          subtitle: const Text(
+                            'PIN będzie zapisany w bezpiecznym magazynie Androida.',
+                            style: TextStyle(color: kMuted, fontSize: 12),
+                          ),
+                          onChanged: busy
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    rememberPin = value ?? false;
+                                    if (rememberPin) rememberLogin = true;
+                                  });
+                                },
+                        ),
                         if (error.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           Text(error, style: const TextStyle(color: kRed, fontWeight: FontWeight.w700)),
@@ -265,7 +330,7 @@ class _WmmLoginGateState extends State<WmmLoginGate> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'PIN służy tylko do zalogowania i nie jest zapisywany w telefonie.',
+                    'Login może być zapamiętany lokalnie. PIN jest zapisywany tylko po zaznaczeniu opcji i trafia do bezpiecznego magazynu Androida.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: kMuted, fontSize: 12),
                   ),
