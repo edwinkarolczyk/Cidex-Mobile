@@ -28,6 +28,9 @@ jobs:
           python scripts/apply_wmm_login.py
           python scripts/patch_android.py
 
+      - name: Add secure storage
+        run: flutter pub add flutter_secure_storage
+
       - name: Get packages
         run: flutter pub get
 
@@ -38,7 +41,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.4 --build-number 54
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
