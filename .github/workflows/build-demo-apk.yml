@@ -26,6 +26,7 @@ jobs:
         run: |
           python scripts/apply_sources.py
           python scripts/apply_wmm_login.py
+          python scripts/apply_beta.py
           python scripts/patch_android.py
 
       - name: Add secure storage
@@ -41,17 +42,17 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.4 --build-number 54
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.5 --build-number 55
 
       - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
+        run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
 
       - name: Show APK size
-        run: ls -lh WMM.apk
+        run: ls -lh WMM-BETA.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WMM-apk
-          path: WMM.apk
+          name: WMM-BETA-apk
+          path: WMM-BETA.apk
           if-no-files-found: error
