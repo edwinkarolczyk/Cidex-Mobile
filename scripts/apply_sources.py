@@ -190,6 +190,98 @@ SETTINGS_CARD_REPLACEMENT = """          const SizedBox(height: 14),
             controller: url,
 """
 
+HOME_REFRESH_NEEDLE = """  Future<void> refresh() async {
+    if (busy) return;
+    setState(() => busy = true);
+    try {
+      if (config.token.trim().isEmpty) {
+        throw ApiException('Ustaw token z okna CIDEX API.');
+      }
+      await api.info();
+      final results = await Future.wait([api.orders(), api.machines()]);
+      final orders = results[0];
+      final machines = results[1];
+      final active = orders.where((item) {
+        final status = (item['status'] ?? '').toString().toLowerCase();
+        return !{'zakończone', 'anulowane', 'archiwum'}.contains(status);
+      }).length;
+      final attention = machines.where((item) {
+        final status = (item['status'] ?? '').toString();
+        return status == 'warn' || status == 'alert';
+      }).length;
+      if (!mounted) return;
+      setState(() {
+        connected = true;
+        connectionText = 'Połączono z CIDEX na komputerze';
+        activeOrders = '$active';
+        machinesAttention = '$attention';
+        lastSync = TimeOfDay.now().format(context);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        connected = false;
+        connectionText = error.toString();
+      });
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+"""
+
+HOME_REFRESH_REPLACEMENT = """  Future<void> refresh() async {
+    if (busy) return;
+    setState(() => busy = true);
+    try {
+      if (config.token.trim().isEmpty) {
+        throw ApiException('Ustaw token z okna CIDEX API.');
+      }
+
+      // Stan połączenia zależy wyłącznie od endpointu informacyjnego.
+      // Brak opcjonalnego modułu nie może oznaczać, że całe WM API jest offline.
+      await api.info();
+      if (!mounted) return;
+      setState(() {
+        connected = true;
+        connectionText = 'Połączono z CIDEX na komputerze';
+        lastSync = TimeOfDay.now().format(context);
+      });
+
+      try {
+        final orders = await api.orders();
+        final active = orders.where((item) {
+          final status = (item['status'] ?? '').toString().toLowerCase();
+          return !{'zakończone', 'anulowane', 'archiwum'}.contains(status);
+        }).length;
+        if (mounted) setState(() => activeOrders = '$active');
+      } on ApiException {
+        if (mounted) setState(() => activeOrders = '—');
+      }
+
+      try {
+        final machines = await api.machines();
+        final attention = machines.where((item) {
+          final status = (item['status'] ?? '').toString();
+          return status == 'warn' || status == 'alert';
+        }).length;
+        if (mounted) setState(() => machinesAttention = '$attention');
+      } on ApiException {
+        if (mounted) setState(() => machinesAttention = '—');
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        connected = false;
+        connectionText = error.toString();
+        activeOrders = '—';
+        machinesAttention = '—';
+      });
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+"""
+
 HOME_MACHINES_TILE = """                  ActionTile(
                     color: kBlue,
                     icon: Icons.precision_manufacturing_rounded,
@@ -317,6 +409,7 @@ def _apply_direct_wm_client(source: str) -> str:
     source = _replace_required(source, HEADERS_OLD, HEADERS_NEW, "nagłówki WM API")
     source = _replace_required(source, SETTINGS_METHOD_NEEDLE, SETTINGS_METHOD_REPLACEMENT, "skanowanie QR połączenia")
     source = _replace_required(source, SETTINGS_CARD_NEEDLE, SETTINGS_CARD_REPLACEMENT, "przycisk parowania QR")
+    source = _replace_required(source, HOME_REFRESH_NEEDLE, HOME_REFRESH_REPLACEMENT, "status połączenia WMM")
     source = _replace_required(source, HOME_MACHINES_TILE, HOME_MOBILE_MODULES, "moduły mobilne")
     source = source.replace("CidexApi", "WmApi")
     source = source.replace("CidexMobileApp", "WmmApp")
