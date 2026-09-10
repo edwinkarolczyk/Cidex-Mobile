@@ -8,6 +8,7 @@ def main() -> None:
     source = source.replace("title: 'Warsztat Menager Mobile'", "title: 'Warsztat Menager Mobile BETA'")
     source = source.replace("Text('Warsztat Menager Mobile'", "Text('Warsztat Menager Mobile BETA'")
     source = source.replace("'Warsztat Menager Mobile',", "'Warsztat Menager Mobile BETA',")
+    source = source.replace("Warsztat Menager Mobile</", "Warsztat Menager Mobile BETA</")
 
     marker = "        'X-WMM-Key': token,\n"
     session_line = "        if (_wmmSessionId.trim().isNotEmpty) 'X-WMM-Session': _wmmSessionId.trim(),\n"
@@ -17,6 +18,12 @@ def main() -> None:
         source = source.replace(marker, marker + session_line, 1)
 
     main_file.write_text(source, encoding='utf-8')
+
+    manifest = Path('android/app/src/main/AndroidManifest.xml')
+    if manifest.is_file():
+        text = manifest.read_text(encoding='utf-8')
+        text = text.replace('android:label="Warsztat Menager Mobile"', 'android:label="WMM BETA"')
+        manifest.write_text(text, encoding='utf-8')
 
 
 if __name__ == '__main__':
