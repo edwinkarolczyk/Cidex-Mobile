@@ -12,6 +12,12 @@ def main() -> None:
             "import 'dart:async';\nimport 'dart:convert';\n",
             1,
         )
+    if "import 'package:flutter_secure_storage/flutter_secure_storage.dart';\n" not in source:
+        source = source.replace(
+            "import 'package:flutter/material.dart';\n",
+            "import 'package:flutter/material.dart';\nimport 'package:flutter_secure_storage/flutter_secure_storage.dart';\n",
+            1,
+        )
 
     needle = '      home: HomeScreen(initialConfig: initialConfig),\n'
     replacement = '      home: WmmLoginGate(initialConfig: initialConfig),\n'
