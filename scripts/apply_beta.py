@@ -17,6 +17,26 @@ def main() -> None:
             raise RuntimeError('Nie znaleziono nagłówków WMM API')
         source = source.replace(marker, marker + session_line, 1)
 
+    photo_old = """  String photoUrl(String relative) {
+    if (relative.startsWith('http://') || relative.startsWith('https://')) {
+      return relative;
+    }
+    return '$baseUrl$relative';
+  }
+"""
+    photo_new = """  String photoUrl(String relative) {
+    if (relative.startsWith('http://') || relative.startsWith('https://')) {
+      return relative;
+    }
+    if (relative.startsWith('/api/v1/media/')) {
+      return '$baseUrl$relative/view';
+    }
+    return '$baseUrl$relative';
+  }
+"""
+    if photo_old in source:
+        source = source.replace(photo_old, photo_new, 1)
+
     main_file.write_text(source, encoding='utf-8')
 
     manifest = Path('android/app/src/main/AndroidManifest.xml')
