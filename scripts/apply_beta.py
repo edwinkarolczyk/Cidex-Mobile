@@ -37,11 +37,6 @@ def main() -> None:
     if photo_old in source:
         source = source.replace(photo_old, photo_new, 1)
 
-    for indent in ('                          ', '                            ', '                      '):
-        old = f"Image.network(\n{indent}url,"
-        new = f"Image.network(\n{indent}url,\n{indent}headers: widget.api.headers,"
-        source = source.replace(old, new)
-
     main_file.write_text(source, encoding='utf-8')
 
     manifest = Path('android/app/src/main/AndroidManifest.xml')
