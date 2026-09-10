@@ -4,13 +4,16 @@
 
 Repozytorium techniczne na razie nadal ma nazwę `edwinkarolczyk/Cidex-Mobile`; można je później przemianować na `Warsztat-Menager-Mobile` bez zmiany założeń aplikacji. Stary backend CIDEX pozostaje tylko jako przejściowa kompatybilność podczas migracji do WM API.
 
-## Aktualny zakres v0.5
+## Aktualny zakres v0.5.4
 
 - branding **Warsztat Menager Mobile / WMM**,
 - ciemny motyw zgodny z WM: grafit/czerń + pomarańczowy akcent,
 - połączenie z komputerem przez Wi‑Fi/LAN,
 - skanowanie QR połączenia z WM zamiast ręcznego przepisywania hosta i klucza,
 - zachowanie ręcznego adresu/klucza jako opcji awaryjnej,
+- logowanie tym samym loginem i PIN-em co w WM,
+- opcja **Zapamiętaj login**,
+- opcja **Zapamiętaj PIN** z przechowywaniem PIN-u w bezpiecznym magazynie Androida, a nie w zwykłych preferencjach aplikacji,
 - Planista: podgląd i dodanie zlecenia,
 - Maszyny: lista, wyszukiwanie, karta, QR, statusy, uwaga, serwis/awaria,
 - Maszyny: zdjęcia z aparatu lub galerii i podgląd zdjęć z WM,
@@ -86,6 +89,8 @@ W aplikacji pozostają przede wszystkim:
 Nie przenosimy do telefonu pełnej historii, ciężkiej administracji systemowej ani technicznych ekranów konfiguracji.
 
 ## Build APK
+
+Wersja aplikacji: **0.5.4** (build **54**).
 
 ```bat
 scripts\build_apk.bat
