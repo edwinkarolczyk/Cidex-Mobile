@@ -22,4 +22,9 @@ void main() {
     expect(pairing.baseUrl, 'http://192.168.1.50:8765');
     expect(pairing.key, 'AB12CD');
   });
+
+  test('WMM 0.5.6 ma centrum powiadomień', () {
+    const screen = WmmNotificationsScreen();
+    expect(screen, isA<WmmNotificationsScreen>());
+  });
 }
