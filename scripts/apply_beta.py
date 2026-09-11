@@ -1,14 +1,25 @@
 from pathlib import Path
 
 
+APP_VERSION = '0.5.6'
+APP_CHANNEL = 'BETA'
+APP_VISIBLE_NAME = f'Warsztat Menager Mobile {APP_VERSION} {APP_CHANNEL}'
+APP_SHORT_NAME = f'WMM {APP_VERSION} {APP_CHANNEL}'
+
+
 def main() -> None:
     main_file = Path('lib/main.dart')
     source = main_file.read_text(encoding='utf-8')
 
-    source = source.replace("title: 'Warsztat Menager Mobile'", "title: 'Warsztat Menager Mobile BETA'")
-    source = source.replace("Text('Warsztat Menager Mobile'", "Text('Warsztat Menager Mobile BETA'")
-    source = source.replace("'Warsztat Menager Mobile',", "'Warsztat Menager Mobile BETA',")
-    source = source.replace("Warsztat Menager Mobile</", "Warsztat Menager Mobile BETA</")
+    # Wersja ma być widoczna użytkownikowi w samej aplikacji, nie tylko w metadanych APK.
+    source = source.replace("title: 'Warsztat Menager Mobile'", f"title: '{APP_VISIBLE_NAME}'")
+    source = source.replace("Text('Warsztat Menager Mobile'", f"Text('{APP_VISIBLE_NAME}'")
+    source = source.replace("'Warsztat Menager Mobile',", f"'{APP_VISIBLE_NAME}',")
+    source = source.replace("Warsztat Menager Mobile</", f"{APP_VISIBLE_NAME}</")
+
+    # Jeśli wcześniejszy etap już dopisał samo BETA, uzupełnij numer wersji.
+    source = source.replace('Warsztat Menager Mobile BETA', APP_VISIBLE_NAME)
+    source = source.replace('WMM BETA', APP_SHORT_NAME)
 
     marker = "        'X-WMM-Key': token,\n"
     session_line = "        if (_wmmSessionId.trim().isNotEmpty) 'X-WMM-Session': _wmmSessionId.trim(),\n"
@@ -42,7 +53,8 @@ def main() -> None:
     manifest = Path('android/app/src/main/AndroidManifest.xml')
     if manifest.is_file():
         text = manifest.read_text(encoding='utf-8')
-        text = text.replace('android:label="Warsztat Menager Mobile"', 'android:label="WMM BETA"')
+        text = text.replace('android:label="Warsztat Menager Mobile"', f'android:label="{APP_SHORT_NAME}"')
+        text = text.replace('android:label="WMM BETA"', f'android:label="{APP_SHORT_NAME}"')
         manifest.write_text(text, encoding='utf-8')
 
 
