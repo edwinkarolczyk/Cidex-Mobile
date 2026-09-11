@@ -33,6 +33,18 @@ def main() -> None:
         1,
     )
 
+    # Test OTA 0.5.8 -> 0.5.9: wersja raportowana przez sam updater musi być wyższa.
+    source = source.replace(
+        "const String kWmmCurrentVersion = '0.5.8';",
+        "const String kWmmCurrentVersion = '0.5.9';",
+        1,
+    )
+    source = source.replace(
+        "subtitle: 'WMM 0.5.8 BETA',",
+        "subtitle: 'WMM 0.5.9 BETA',",
+        1,
+    )
+
     path.write_text(source, encoding='utf-8')
 
 
