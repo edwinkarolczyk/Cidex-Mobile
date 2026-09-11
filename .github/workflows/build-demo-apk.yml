@@ -30,6 +30,7 @@ jobs:
           python scripts/apply_beta.py
           python scripts/apply_stability.py
           python scripts/apply_stability_finalize.py
+          python scripts/apply_wmm_status_navigation.py
 
       - name: Add secure storage
         run: flutter pub add flutter_secure_storage:9.2.4
@@ -44,7 +45,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.6 --build-number 56
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.7 --build-number 57
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
