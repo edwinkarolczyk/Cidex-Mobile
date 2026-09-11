@@ -38,6 +38,7 @@ jobs:
           python scripts/apply_updater_finalize.py
           python scripts/apply_biometrics.py
           python scripts/apply_biometrics_finalize.py
+          python scripts/apply_updater_resilient.py
 
       - name: Prepare stable release signing
         shell: bash
@@ -77,7 +78,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.10 --build-number 60
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.11 --build-number 61
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
@@ -91,9 +92,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.10-beta"
-          TITLE="WMM 0.5.10 BETA"
-          NOTES="WMM 0.5.10 BETA dodaje logowanie biometryczne (odcisk palca / twarz) z PIN-em jako metodą awaryjną. Wersja korzysta z tego samego stałego podpisu i aktualizuje się w miejscu przez WMM."
+          TAG="v0.5.11-beta"
+          TITLE="WMM 0.5.11 BETA"
+          NOTES="WMM 0.5.11 BETA naprawia aktualizacje OTA: automatyczne ponawianie pobierania, wznowienie przerwanego transferu i czytelny przycisk ponownej próby bez wyświetlania technicznego adresu GitHub CDN. Zachowuje logowanie biometryczne z 0.5.10."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" WMM-BETA.apk --clobber
             gh release edit "$TAG" --title "$TITLE" --notes "$NOTES"
