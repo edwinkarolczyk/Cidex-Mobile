@@ -23,23 +23,24 @@ void main() {
     expect(pairing.key, 'AB12CD');
   });
 
-  test('WMM 0.5.8 pokazuje statusy maszyn jak WM', () {
+  test('WMM 0.5.10 pokazuje statusy maszyn jak WM', () {
     expect(wmmMachineStatusLabel('ok'), 'Sprawna');
     expect(wmmMachineStatusLabel('alert'), 'Serwis / przegląd');
     expect(wmmMachineStatusLabel('warn'), 'Awaria');
     expect(wmmMachineStatusLabel('warm'), 'Awaria');
   });
 
-  test('WMM 0.5.8 ma centrum powiadomień z klientem WM', () {
+  test('WMM 0.5.10 ma centrum powiadomień z klientem WM', () {
     const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
     final api = WmApi(config);
     final screen = WmmNotificationsScreen(api: api);
     expect(screen.api, same(api));
   });
 
-  test('WMM 0.5.8 porównuje wersje aktualizacji', () {
-    expect(wmmCompareVersions('0.5.8', '0.5.7'), greaterThan(0));
-    expect(wmmCompareVersions('0.5.8', '0.5.8'), 0);
-    expect(wmmCompareVersions('0.5.7', '0.5.8'), lessThan(0));
+  test('WMM 0.5.10 porównuje wersje aktualizacji', () {
+    expect(kWmmCurrentVersion, '0.5.10');
+    expect(wmmCompareVersions('0.5.10', '0.5.9'), greaterThan(0));
+    expect(wmmCompareVersions('0.5.10', '0.5.10'), 0);
+    expect(wmmCompareVersions('0.5.9', '0.5.10'), lessThan(0));
   });
 }
