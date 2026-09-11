@@ -29,6 +29,7 @@ jobs:
           python scripts/patch_android.py
           python scripts/apply_beta.py
           python scripts/apply_stability.py
+          python scripts/apply_stability_finalize.py
 
       - name: Add secure storage
         run: flutter pub add flutter_secure_storage:9.2.4
