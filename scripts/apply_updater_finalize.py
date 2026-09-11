@@ -17,6 +17,12 @@ def main() -> None:
     )
 
     source = source.replace(
+        "      await WmmNotifications.initialize();\n      WmmUpdater.checkAndPrompt(context);\n      await refresh();\n",
+        "      WmmUpdater.checkAndPrompt(context);\n      await WmmNotifications.initialize();\n      await refresh();\n",
+        1,
+    )
+
+    source = source.replace(
         "      _startupPromptShown = true;\n      await showDialog<void>(\n",
         "      _startupPromptShown = true;\n      final navigator = Navigator.of(context);\n      await showDialog<void>(\n",
         1,
