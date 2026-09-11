@@ -36,6 +36,7 @@ jobs:
           python scripts/apply_wmm_status_navigation.py
           python scripts/apply_updater.py
           python scripts/apply_updater_finalize.py
+          python scripts/apply_biometrics.py
 
       - name: Prepare stable release signing
         shell: bash
@@ -60,8 +61,10 @@ jobs:
           python scripts/configure_release_signing.py
           echo "WMM_STABLE_SIGNING=true" >> "$GITHUB_ENV"
 
-      - name: Add secure storage
-        run: flutter pub add flutter_secure_storage:9.2.4
+      - name: Add secure storage and biometrics
+        run: |
+          flutter pub add flutter_secure_storage:9.2.4
+          flutter pub add local_auth
 
       - name: Get packages
         run: flutter pub get
@@ -73,7 +76,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.9 --build-number 59
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.10 --build-number 60
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
@@ -87,9 +90,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.9-beta"
-          TITLE="WMM 0.5.9 BETA"
-          NOTES="Test automatycznej aktualizacji WMM 0.5.8 -> 0.5.9. Bez zmian funkcjonalnych poza numerem wersji; celem jest sprawdzenie pobierania APK z GitHub Releases i aktualizacji w miejscu."
+          TAG="v0.5.10-beta"
+          TITLE="WMM 0.5.10 BETA"
+          NOTES="WMM 0.5.10 BETA dodaje logowanie biometryczne (odcisk palca / twarz) z PIN-em jako metodą awaryjną. Wersja korzysta z tego samego stałego podpisu i aktualizuje się w miejscu przez WMM."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" WMM-BETA.apk --clobber
             gh release edit "$TAG" --title "$TITLE" --notes "$NOTES"
