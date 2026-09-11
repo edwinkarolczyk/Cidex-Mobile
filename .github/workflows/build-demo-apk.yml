@@ -37,6 +37,7 @@ jobs:
           python scripts/apply_updater.py
           python scripts/apply_updater_finalize.py
           python scripts/apply_biometrics.py
+          python scripts/apply_biometrics_finalize.py
 
       - name: Prepare stable release signing
         shell: bash
