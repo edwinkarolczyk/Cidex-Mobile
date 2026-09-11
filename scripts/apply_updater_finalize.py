@@ -16,6 +16,17 @@ def main() -> None:
         1,
     )
 
+    source = source.replace(
+        "      _startupPromptShown = true;\n      await showDialog<void>(\n",
+        "      _startupPromptShown = true;\n      final navigator = Navigator.of(context);\n      await showDialog<void>(\n",
+        1,
+    )
+    source = source.replace(
+        "                Navigator.of(context).push(\n                  MaterialPageRoute(builder: (_) => const WmmUpdateScreen()),\n                );",
+        "                navigator.push(\n                  MaterialPageRoute(builder: (_) => const WmmUpdateScreen()),\n                );",
+        1,
+    )
+
     path.write_text(source, encoding='utf-8')
 
 
