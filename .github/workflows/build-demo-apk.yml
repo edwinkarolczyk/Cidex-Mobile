@@ -1,6 +1,8 @@
 name: Build WMM APK
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -71,7 +73,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.8 --build-number 58
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.9 --build-number 59
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
@@ -85,9 +87,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.8-beta"
-          TITLE="WMM 0.5.8 BETA"
-          NOTES="Automatyczna aktualizacja Warsztat Menager Mobile 0.5.8 BETA. APK jest podpisane stałym kluczem WMM i może podmieniać poprzednią wersję z tym samym podpisem."
+          TAG="v0.5.9-beta"
+          TITLE="WMM 0.5.9 BETA"
+          NOTES="Test automatycznej aktualizacji WMM 0.5.8 -> 0.5.9. Bez zmian funkcjonalnych poza numerem wersji; celem jest sprawdzenie pobierania APK z GitHub Releases i aktualizacji w miejscu."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" WMM-BETA.apk --clobber
             gh release edit "$TAG" --title "$TITLE" --notes "$NOTES"
