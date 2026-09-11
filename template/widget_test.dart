@@ -23,8 +23,17 @@ void main() {
     expect(pairing.key, 'AB12CD');
   });
 
-  test('WMM 0.5.6 ma centrum powiadomień', () {
-    const screen = WmmNotificationsScreen();
-    expect(screen, isA<WmmNotificationsScreen>());
+  test('WMM 0.5.7 pokazuje statusy maszyn jak WM', () {
+    expect(wmmMachineStatusLabel('ok'), 'Sprawna');
+    expect(wmmMachineStatusLabel('alert'), 'Serwis / przegląd');
+    expect(wmmMachineStatusLabel('warn'), 'Awaria');
+    expect(wmmMachineStatusLabel('warm'), 'Awaria');
+  });
+
+  test('WMM 0.5.7 ma centrum powiadomień z klientem WM', () {
+    const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
+    final api = WmApi(config);
+    final screen = WmmNotificationsScreen(api: api);
+    expect(screen.api, same(api));
   });
 }
