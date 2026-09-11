@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -31,6 +34,31 @@ jobs:
           python scripts/apply_stability.py
           python scripts/apply_stability_finalize.py
           python scripts/apply_wmm_status_navigation.py
+          python scripts/apply_updater.py
+          python scripts/apply_updater_finalize.py
+
+      - name: Prepare stable release signing
+        shell: bash
+        env:
+          WMM_KEYSTORE_B64: ${{ secrets.WMM_KEYSTORE_B64 }}
+          WMM_KEYSTORE_PASSWORD: ${{ secrets.WMM_KEYSTORE_PASSWORD }}
+          WMM_KEY_ALIAS: ${{ secrets.WMM_KEY_ALIAS }}
+          WMM_KEY_PASSWORD: ${{ secrets.WMM_KEY_PASSWORD }}
+        run: |
+          if [ -z "${WMM_KEYSTORE_B64:-}" ]; then
+            echo "WMM_STABLE_SIGNING=false" >> "$GITHUB_ENV"
+            echo "::warning::Brak WMM_KEYSTORE_B64 - APK zostanie zbudowane, ale nie będzie publikowane jako aktualizacja OTA."
+            exit 0
+          fi
+          echo "$WMM_KEYSTORE_B64" | base64 --decode > android/app/wmm-release.jks
+          cat > android/key.properties <<EOF
+          storePassword=$WMM_KEYSTORE_PASSWORD
+          keyPassword=$WMM_KEY_PASSWORD
+          keyAlias=$WMM_KEY_ALIAS
+          storeFile=wmm-release.jks
+          EOF
+          python scripts/configure_release_signing.py
+          echo "WMM_STABLE_SIGNING=true" >> "$GITHUB_ENV"
 
       - name: Add secure storage
         run: flutter pub add flutter_secure_storage:9.2.4
@@ -45,13 +73,29 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.7 --build-number 57
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.8 --build-number 58
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
 
       - name: Show APK size
         run: ls -lh WMM-BETA.apk
+
+      - name: Publish GitHub update release
+        if: env.WMM_STABLE_SIGNING == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v0.5.8-beta"
+          TITLE="WMM 0.5.8 BETA"
+          NOTES="Automatyczna aktualizacja Warsztat Menager Mobile 0.5.8 BETA. APK jest podpisane stałym kluczem WMM i może podmieniać poprzednią wersję z tym samym podpisem."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" WMM-BETA.apk --clobber
+            gh release edit "$TAG" --title "$TITLE" --notes "$NOTES"
+          else
+            gh release create "$TAG" WMM-BETA.apk --target "$GITHUB_SHA" --title "$TITLE" --notes "$NOTES"
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
