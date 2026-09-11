@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-APP_VERSION = '0.5.9'
+APP_VERSION = '0.5.10'
 APP_CHANNEL = 'BETA'
 APP_VISIBLE_NAME = f'Warsztat Menager Mobile {APP_VERSION} {APP_CHANNEL}'
 APP_SHORT_NAME = f'WMM {APP_VERSION} {APP_CHANNEL}'
