@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import re
 
-APP_VERSION = "0.5.11"
+APP_VERSION = "0.5.12"
 
 
 def main() -> None:
