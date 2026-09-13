@@ -41,6 +41,7 @@ jobs:
           python scripts/apply_updater_resilient.py
           python scripts/apply_home_update_banner.py
           python scripts/apply_unified_qr.py
+          python scripts/apply_startup_update_check.py
 
       - name: Prepare stable release signing
         shell: bash
@@ -80,7 +81,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.13 --build-number 63
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.14 --build-number 64
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
@@ -94,9 +95,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.13-beta"
-          TITLE="WMM 0.5.13 BETA"
-          NOTES="WMM 0.5.13 BETA łączy skanowanie QR maszyn i narzędzi w jednym skanerze. WMM rozpoznaje typ obiektu i otwiera od razu właściwą kartę; obsługuje też prefiksy WMM/CIDEX MACHINE, MASZYNA, TOOL i NARZEDZIE oraz ręczne ID. Zachowuje nagłówek aktualizacji z 0.5.12, odporny updater OTA i logowanie biometryczne."
+          TAG="v0.5.14-beta"
+          TITLE="WMM 0.5.14 BETA"
+          NOTES="WMM 0.5.14 BETA sprawdza aktualizacje natychmiast po uruchomieniu aplikacji, jeszcze przed połączeniem i logowaniem do Warsztat Menager. Informacja o nowej wersji jest więc dostępna także wtedy, gdy komputer z WM jest wyłączony lub telefon nie ma połączenia z siecią zakładową. Zachowuje wspólny skaner QR maszyn i narzędzi z 0.5.13, nagłówek aktualizacji, odporny updater OTA i logowanie biometryczne."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" WMM-BETA.apk --clobber
             gh release edit "$TAG" --title "$TITLE" --notes "$NOTES"

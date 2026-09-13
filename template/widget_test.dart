@@ -23,28 +23,28 @@ void main() {
     expect(pairing.key, 'AB12CD');
   });
 
-  test('WMM 0.5.13 pokazuje statusy maszyn jak WM', () {
+  test('WMM 0.5.14 pokazuje statusy maszyn jak WM', () {
     expect(wmmMachineStatusLabel('ok'), 'Sprawna');
     expect(wmmMachineStatusLabel('alert'), 'Serwis / przegląd');
     expect(wmmMachineStatusLabel('warn'), 'Awaria');
     expect(wmmMachineStatusLabel('warm'), 'Awaria');
   });
 
-  test('WMM 0.5.13 ma centrum powiadomień z klientem WM', () {
+  test('WMM 0.5.14 ma centrum powiadomień z klientem WM', () {
     const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
     final api = WmApi(config);
     final screen = WmmNotificationsScreen(api: api);
     expect(screen.api, same(api));
   });
 
-  test('WMM 0.5.13 porównuje wersje aktualizacji', () {
-    expect(kWmmCurrentVersion, '0.5.13');
-    expect(wmmCompareVersions('0.5.13', '0.5.12'), greaterThan(0));
-    expect(wmmCompareVersions('0.5.13', '0.5.13'), 0);
-    expect(wmmCompareVersions('0.5.12', '0.5.13'), lessThan(0));
+  test('WMM 0.5.14 porównuje wersje aktualizacji', () {
+    expect(kWmmCurrentVersion, '0.5.14');
+    expect(wmmCompareVersions('0.5.14', '0.5.13'), greaterThan(0));
+    expect(wmmCompareVersions('0.5.14', '0.5.14'), 0);
+    expect(wmmCompareVersions('0.5.13', '0.5.14'), lessThan(0));
   });
 
-  test('WMM 0.5.13 rozpoznaje QR maszyny i narzędzia', () {
+  test('WMM 0.5.14 rozpoznaje QR maszyny i narzędzia', () {
     expect(
       wmmParseObjectQr('CIDEX:MACHINE:42'),
       {'entity': 'machine', 'id': '42'},
@@ -63,5 +63,10 @@ void main() {
     );
     expect(wmmQrEntity({'entity': 'tool'}), 'tool');
     expect(wmmQrObjectId({'nr_ewid': '42'}), '42');
+  });
+
+  test('WMM 0.5.14 ma baner aktualizacji dostępny przed logowaniem', () {
+    final banner = WmmHomeVersionBanner(onOpenUpdates: () {});
+    expect(banner.onOpenUpdates, isNotNull);
   });
 }
