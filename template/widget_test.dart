@@ -23,28 +23,28 @@ void main() {
     expect(pairing.key, 'AB12CD');
   });
 
-  test('WMM 0.5.14 pokazuje statusy maszyn jak WM', () {
+  test('WMM 0.5.15 pokazuje statusy maszyn jak WM', () {
     expect(wmmMachineStatusLabel('ok'), 'Sprawna');
     expect(wmmMachineStatusLabel('alert'), 'Serwis / przegląd');
     expect(wmmMachineStatusLabel('warn'), 'Awaria');
     expect(wmmMachineStatusLabel('warm'), 'Awaria');
   });
 
-  test('WMM 0.5.14 ma centrum powiadomień z klientem WM', () {
+  test('WMM 0.5.15 ma centrum powiadomień z klientem WM', () {
     const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
     final api = WmApi(config);
     final screen = WmmNotificationsScreen(api: api);
     expect(screen.api, same(api));
   });
 
-  test('WMM 0.5.14 porównuje wersje aktualizacji', () {
-    expect(kWmmCurrentVersion, '0.5.14');
-    expect(wmmCompareVersions('0.5.14', '0.5.13'), greaterThan(0));
-    expect(wmmCompareVersions('0.5.14', '0.5.14'), 0);
-    expect(wmmCompareVersions('0.5.13', '0.5.14'), lessThan(0));
+  test('WMM 0.5.15 porównuje wersje aktualizacji', () {
+    expect(kWmmCurrentVersion, '0.5.15');
+    expect(wmmCompareVersions('0.5.15', '0.5.14'), greaterThan(0));
+    expect(wmmCompareVersions('0.5.15', '0.5.15'), 0);
+    expect(wmmCompareVersions('0.5.14', '0.5.15'), lessThan(0));
   });
 
-  test('WMM 0.5.14 rozpoznaje QR maszyny i narzędzia', () {
+  test('WMM 0.5.15 rozpoznaje QR maszyny i narzędzia', () {
     expect(
       wmmParseObjectQr('CIDEX:MACHINE:42'),
       {'entity': 'machine', 'id': '42'},
@@ -65,8 +65,43 @@ void main() {
     expect(wmmQrObjectId({'nr_ewid': '42'}), '42');
   });
 
-  test('WMM 0.5.14 ma baner aktualizacji dostępny przed logowaniem', () {
+  test('WMM 0.5.15 ma baner aktualizacji dostępny przed logowaniem', () {
     final banner = WmmHomeVersionBanner(onOpenUpdates: () {});
     expect(banner.onOpenUpdates, isNotNull);
+  });
+
+  test('WMM 0.5.15 ma pełny obieg Dyspozycji zgodny z WM', () {
+    expect(wmmDispositionStatusLabel('nowa'), 'Nowa');
+    expect(wmmDispositionStatusLabel('w_toku'), 'W toku');
+    expect(wmmDispositionStatusLabel('wstrzymana'), 'Wstrzymana');
+    expect(wmmDispositionStatusLabel('zamknieta'), 'Zakończona');
+
+    expect(wmmDispositionAllowedTargets('nowa'), ['w_toku']);
+    expect(wmmDispositionAllowedTargets('w_toku'), ['wstrzymana', 'zamknieta']);
+    expect(wmmDispositionAllowedTargets('wstrzymana'), ['w_toku', 'zamknieta']);
+    expect(wmmDispositionAllowedTargets('zamknieta'), isEmpty);
+
+    expect(wmmDispositionPriorityLabel('krytyczny'), 'Krytyczny');
+    expect(wmmDispositionTypeLabel('maszyna'), 'Maszyna');
+    expect(wmmDispositionTypeLabel('narzedzie'), 'Narzędzie');
+    expect(
+      wmmDispositionAssignment({'dla_wszystkich': true, 'przypisane_do': 'Edwin'}),
+      'Wszyscy',
+    );
+    expect(
+      wmmDispositionAssignment({'dla_wszystkich': false, 'przypisane_do': 'Edwin'}),
+      'Edwin',
+    );
+
+    const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
+    final api = WmApi(config);
+    final list = DispositionsScreen(api: api);
+    final detail = DispositionScreen(
+      api: api,
+      initial: const {'id': 'DYSP-TEST', 'status': 'nowa'},
+    );
+    expect(list.api, same(api));
+    expect(detail.api, same(api));
+    expect(detail.initial['id'], 'DYSP-TEST');
   });
 }

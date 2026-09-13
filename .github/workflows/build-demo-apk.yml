@@ -42,6 +42,7 @@ jobs:
           python scripts/apply_home_update_banner.py
           python scripts/apply_unified_qr.py
           python scripts/apply_startup_update_check.py
+          python scripts/apply_dispositions.py
 
       - name: Prepare stable release signing
         shell: bash
@@ -81,7 +82,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.14 --build-number 64
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.15 --build-number 65
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
@@ -95,17 +96,27 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.14-beta"
-          TITLE="WMM 0.5.14 BETA"
-          NOTES="WMM 0.5.14 BETA sprawdza aktualizacje natychmiast po uruchomieniu aplikacji, jeszcze przed połączeniem i logowaniem do Warsztat Menager. Informacja o nowej wersji jest więc dostępna także wtedy, gdy komputer z WM jest wyłączony lub telefon nie ma połączenia z siecią zakładową. Zachowuje wspólny skaner QR maszyn i narzędzi z 0.5.13, nagłówek aktualizacji, odporny updater OTA i logowanie biometryczne."
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" WMM-BETA.apk --clobber
-            gh release edit "$TAG" --title "$TITLE" --notes "$NOTES"
-          else
-            gh release create "$TAG" WMM-BETA.apk --target "$GITHUB_SHA" --title "$TITLE" --notes "$NOTES"
-          fi
+          TAG="v0.5.15-beta"
+          TITLE="WMM 0.5.15 BETA"
+          NOTES="WMM 0.5.15 BETA dodaje pełne Dyspozycje mobilne: wyszukiwanie i sortowanie zadań, kartę szczegółów, termin, priorytet, przypisanie, obiekt, wykonawcę i historię statusów. Z telefonu można bezpiecznie rozpocząć dyspozycję, wstrzymać ją, wznowić jako W toku i zakończyć zgodnie z obiegiem WM. Dodany został też wspólny system pomocy ! przy najważniejszych polach i działaniach."
+          for attempt in 1 2 3; do
+            echo "Publikacja release - próba $attempt/3"
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              if gh release upload "$TAG" WMM-BETA.apk --clobber; then
+                exit 0
+              fi
+            else
+              if gh release create "$TAG" WMM-BETA.apk --target "$GITHUB_SHA" --title "$TITLE" --notes "$NOTES"; then
+                exit 0
+              fi
+            fi
+            sleep $((attempt * 5))
+          done
+          echo "Nie udało się opublikować release po 3 próbach."
+          exit 1
 
       - name: Upload APK artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: WMM-BETA-apk
