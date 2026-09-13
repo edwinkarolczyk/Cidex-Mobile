@@ -6,6 +6,7 @@ import re
 
 APP_VERSION = "0.5.14"
 
+# Ten patch działa jako ostatni etap generowania i uruchamia sprawdzanie GitHuba już na LoginGate.
 
 def main() -> None:
     path = Path("lib/main.dart")
