@@ -1,4 +1,4 @@
-# WMM 0.5.16
+# WMM 0.5.17
 name: Build WMM APK
 
 on:
@@ -46,6 +46,7 @@ jobs:
           python scripts/apply_dispositions.py
           python scripts/apply_warehouse.py
           python scripts/apply_warehouse_finalize.py
+          python scripts/apply_warehouse_bars.py
 
       - name: Prepare stable release signing
         shell: bash
@@ -85,7 +86,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.16 --build-number 66
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.17 --build-number 67
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
@@ -99,9 +100,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.16-beta"
-          TITLE="WMM 0.5.16 BETA"
-          NOTES="WMM 0.5.16 BETA dodaje Magazyn mobilny: wyszukiwanie po kodzie, nazwie, rozmiarze i lokalizacji, kartę istniejącego surowca, aktualny stan oraz historię przyjęć. Z telefonu można wykonać bezpieczne Przyjmij materiał: podać ilość, opcjonalny dokument, dostawcę i uwagę. Operacja zwiększa wyłącznie stan istniejącej pozycji i zapisuje historię PZ z użytkownikiem oraz czasem. WMM nie tworzy, nie usuwa i nie edytuje kartoteki surowca ani jego jednostki."
+          TAG="v0.5.17-beta"
+          TITLE="WMM 0.5.17 BETA"
+          NOTES="WMM 0.5.17 BETA poprawia przyjęcia Magazynu tak, aby dla pozycji liczonych w mm działały jak desktopowy WM: zamiast jednej ilości są pola Liczba sztang i Długość sztangi [mm]. WMM wymaga całkowitej dodatniej liczby sztang, dodatniej długości i przed zapisem pokazuje przeliczenie sztangi × długość oraz stan przed i po. Dla pozostałych jednostek nadal używane jest zwykłe pole ilości."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
