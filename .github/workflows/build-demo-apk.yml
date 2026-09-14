@@ -1,4 +1,4 @@
-# WMM 0.5.15
+# WMM 0.5.16
 name: Build WMM APK
 
 on:
@@ -44,6 +44,7 @@ jobs:
           python scripts/apply_unified_qr.py
           python scripts/apply_startup_update_check.py
           python scripts/apply_dispositions.py
+          python scripts/apply_warehouse.py
 
       - name: Prepare stable release signing
         shell: bash
@@ -83,7 +84,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.15 --build-number 65
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.16 --build-number 66
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
@@ -97,9 +98,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.15-beta"
-          TITLE="WMM 0.5.15 BETA"
-          NOTES="WMM 0.5.15 BETA dodaje pełne Dyspozycje mobilne: wyszukiwanie i sortowanie zadań, kartę szczegółów, termin, priorytet, przypisanie, obiekt, wykonawcę i historię statusów. Z telefonu można bezpiecznie rozpocząć dyspozycję, wstrzymać ją, wznowić jako W toku i zakończyć zgodnie z obiegiem WM. Dodany został też wspólny system pomocy ! przy najważniejszych polach i działaniach."
+          TAG="v0.5.16-beta"
+          TITLE="WMM 0.5.16 BETA"
+          NOTES="WMM 0.5.16 BETA dodaje Magazyn mobilny: wyszukiwanie po kodzie, nazwie, rozmiarze i lokalizacji, kartę istniejącego surowca, aktualny stan oraz historię przyjęć. Z telefonu można wykonać bezpieczne Przyjmij materiał: podać ilość, opcjonalny dokument, dostawcę i uwagę. Operacja zwiększa wyłącznie stan istniejącej pozycji i zapisuje historię PZ z użytkownikiem oraz czasem. WMM nie tworzy, nie usuwa i nie edytuje kartoteki surowca ani jego jednostki."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
