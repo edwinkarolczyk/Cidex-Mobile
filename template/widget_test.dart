@@ -23,28 +23,28 @@ void main() {
     expect(pairing.key, 'AB12CD');
   });
 
-  test('WMM 0.5.15 pokazuje statusy maszyn jak WM', () {
+  test('WMM 0.5.16 pokazuje statusy maszyn jak WM', () {
     expect(wmmMachineStatusLabel('ok'), 'Sprawna');
     expect(wmmMachineStatusLabel('alert'), 'Serwis / przegląd');
     expect(wmmMachineStatusLabel('warn'), 'Awaria');
     expect(wmmMachineStatusLabel('warm'), 'Awaria');
   });
 
-  test('WMM 0.5.15 ma centrum powiadomień z klientem WM', () {
+  test('WMM 0.5.16 ma centrum powiadomień z klientem WM', () {
     const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
     final api = WmApi(config);
     final screen = WmmNotificationsScreen(api: api);
     expect(screen.api, same(api));
   });
 
-  test('WMM 0.5.15 porównuje wersje aktualizacji', () {
-    expect(kWmmCurrentVersion, '0.5.15');
-    expect(wmmCompareVersions('0.5.15', '0.5.14'), greaterThan(0));
-    expect(wmmCompareVersions('0.5.15', '0.5.15'), 0);
-    expect(wmmCompareVersions('0.5.14', '0.5.15'), lessThan(0));
+  test('WMM 0.5.16 porównuje wersje aktualizacji', () {
+    expect(kWmmCurrentVersion, '0.5.16');
+    expect(wmmCompareVersions('0.5.16', '0.5.15'), greaterThan(0));
+    expect(wmmCompareVersions('0.5.16', '0.5.16'), 0);
+    expect(wmmCompareVersions('0.5.15', '0.5.16'), lessThan(0));
   });
 
-  test('WMM 0.5.15 rozpoznaje QR maszyny i narzędzia', () {
+  test('WMM 0.5.16 rozpoznaje QR maszyny i narzędzia', () {
     expect(
       wmmParseObjectQr('CIDEX:MACHINE:42'),
       {'entity': 'machine', 'id': '42'},
@@ -65,12 +65,12 @@ void main() {
     expect(wmmQrObjectId({'nr_ewid': '42'}), '42');
   });
 
-  test('WMM 0.5.15 ma baner aktualizacji dostępny przed logowaniem', () {
+  test('WMM 0.5.16 ma baner aktualizacji dostępny przed logowaniem', () {
     final banner = WmmHomeVersionBanner(onOpenUpdates: () {});
     expect(banner.onOpenUpdates, isNotNull);
   });
 
-  test('WMM 0.5.15 ma pełny obieg Dyspozycji zgodny z WM', () {
+  test('WMM 0.5.16 ma pełny obieg Dyspozycji zgodny z WM', () {
     expect(wmmDispositionStatusLabel('nowa'), 'Nowa');
     expect(wmmDispositionStatusLabel('w_toku'), 'W toku');
     expect(wmmDispositionStatusLabel('wstrzymana'), 'Wstrzymana');
@@ -103,5 +103,34 @@ void main() {
     expect(list.api, same(api));
     expect(detail.api, same(api));
     expect(detail.initial['id'], 'DYSP-TEST');
+  });
+
+  test('WMM 0.5.16 ma Magazyn z przyjęciem bez edycji kartoteki', () {
+    const row = <String, dynamic>{
+      'kod': 'SR001',
+      'nazwa': 'Pręt fi8',
+      'jednostka': 'kg',
+      'stan': 12.5,
+      'lokalizacja': 'Regał A1',
+      'receipts': [
+        {'qty': 2.5, 'user': 'edwin', 'ts': '2026-09-14T09:00:00'},
+      ],
+    };
+
+    expect(wmmWarehouseItemId(row), 'SR001');
+    expect(wmmWarehouseName(row), 'Pręt fi8');
+    expect(wmmWarehouseUnit(row), 'kg');
+    expect(wmmWarehouseStock(row), 12.5);
+    expect(wmmWarehouseLocation(row), 'Regał A1');
+    expect(wmmWarehouseReceipts(row), hasLength(1));
+    expect(wmmWarehouseNumber(12.5), '12.5');
+
+    const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
+    final api = WmApi(config);
+    final list = WarehouseScreen(api: api);
+    final detail = WarehouseItemScreen(api: api, initial: row);
+    expect(list.api, same(api));
+    expect(detail.api, same(api));
+    expect(wmmWarehouseItemId(detail.initial), 'SR001');
   });
 }
