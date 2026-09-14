@@ -45,6 +45,7 @@ jobs:
           python scripts/apply_startup_update_check.py
           python scripts/apply_dispositions.py
           python scripts/apply_warehouse.py
+          python scripts/apply_warehouse_finalize.py
 
       - name: Prepare stable release signing
         shell: bash
