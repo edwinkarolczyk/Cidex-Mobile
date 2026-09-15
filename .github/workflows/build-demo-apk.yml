@@ -1,4 +1,4 @@
-# WMM 0.5.19
+# WMM 0.5.20
 name: Build WMM APK
 
 on:
@@ -49,6 +49,7 @@ jobs:
           python scripts/apply_warehouse_bars.py
           python scripts/apply_machine_quick_actions.py
           python scripts/apply_machine_quick_actions_finalize.py
+          python scripts/apply_cycle_review_action.py
 
       - name: Prepare stable release signing
         shell: bash
@@ -88,7 +89,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.19 --build-number 69
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.20 --build-number 70
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
@@ -102,9 +103,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.19"
-          TITLE="WMM 0.5.19"
-          NOTES="WMM 0.5.19 poprawia szybką naprawę Maszyn: jedna naprawa zapisuje jeden rzeczywisty okres Awarii z czasem trwania, bez dodatkowych technicznych wpisów rozpoczęcia/zakończenia w drugiej historii. Usunięto z telefonu możliwość tworzenia planowanych przeglądów; WMM pokazuje wyłącznie wpisy zaplanowane wcześniej w desktopowym WM lub utworzone przez jego automatykę. Widoczny napis BETA został usunięty z aplikacji i wydania. Wymaga aktualnego WM z gałęzi Rozwiniecie i ponownego uruchomienia WM po aktualizacji."
+          TAG="v0.5.20"
+          TITLE="WMM 0.5.20"
+          NOTES="WMM 0.5.20 przywraca po QR maszyny akcję Przegląd cykliczny zgodną z istniejącym harmonogramem Warsztat Menager. Telefon nie tworzy nowych terminów ani typów przeglądów: pokazuje wyłącznie cykliczne wpisy już wynikające z konfiguracji WM, w tym terminy generowane automatycznie. Wybrany termin można rozpocząć albo oznaczyć jako wykonany; zapis trafia do istniejącego reviews i synchronizuje powiązaną Dyspozycję tym samym mechanizmem co desktopowy WM. Szybka naprawa pozostaje bez zmian. Wymaga aktualnego WM z gałęzi Rozwiniecie i ponownego uruchomienia WM po aktualizacji."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
