@@ -1,4 +1,4 @@
-# WMM 0.5.23
+# WMM 0.5.24
 name: Build WMM APK
 
 on:
@@ -54,6 +54,7 @@ jobs:
           python scripts/apply_planned_review_finalize.py
           python scripts/apply_update_refresh_0522.py
           python scripts/apply_planned_reviews_visible_0523.py
+          python scripts/apply_review_complete_inline_0524.py
 
       - name: Prepare stable release signing
         shell: bash
@@ -93,7 +94,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.23 --build-number 73
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.24 --build-number 74
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
@@ -107,9 +108,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.23"
-          TITLE="WMM 0.5.23"
-          NOTES="WMM 0.5.23 naprawia widoczność zaplanowanych przeglądów po QR. Telefon od razu pobiera pełną listę z WM i pokazuje na karcie ręczne wpisy zapisane w machine.reviews oraz terminy cykliczne z harmonogramu, bez duplikatów. Przy błędzie połączenia pokazuje komunikat i przycisk odświeżenia. Wymaga aktualnego WM z gałęzi Rozwiniecie i restartu WM."
+          TAG="v0.5.24"
+          TITLE="WMM 0.5.24"
+          NOTES="WMM 0.5.24 dodaje bezpośrednią akcję WYKONANO przy przeglądach widocznych po QR. Wykonanie zapisuje się do istniejącego przeglądu WM z datą, loginem i opcjonalną notatką; nie powstaje nowy wpis ani duplikat. Dla rozpoczętego przeglądu przycisk ma nazwę ZAKOŃCZ PRZEGLĄD."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
