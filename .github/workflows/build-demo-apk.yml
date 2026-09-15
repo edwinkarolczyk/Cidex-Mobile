@@ -1,4 +1,4 @@
-# WMM 0.5.21
+# WMM 0.5.22
 name: Build WMM APK
 
 on:
@@ -52,6 +52,7 @@ jobs:
           python scripts/apply_cycle_review_action.py
           python scripts/apply_cycle_review_finalize.py
           python scripts/apply_planned_review_finalize.py
+          python scripts/apply_update_refresh_0522.py
 
       - name: Prepare stable release signing
         shell: bash
@@ -91,7 +92,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.21 --build-number 71
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.22 --build-number 72
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
@@ -105,9 +106,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.21"
-          TITLE="WMM 0.5.21"
-          NOTES="WMM 0.5.21 poprawia dwie rzeczy w Maszynach. Zapisy z telefonu wymagają aktywnej sesji użytkownika, dzięki czemu historia przechowuje rzeczywisty login zamiast anonimowego autora WMM; opis zawiera też [WMM] login. Po QR przycisk Przegląd zaplanowany pokazuje wszystkie istniejące plany tej maszyny z WM: wpisy ręczne z reviews oraz terminy cykliczne z harmonogramu. Telefon nadal nie tworzy nowych planów. Wymaga aktualnego WM z gałęzi Rozwiniecie i ponownego uruchomienia WM."
+          TAG="v0.5.22"
+          TITLE="WMM 0.5.22"
+          NOTES="WMM 0.5.22 poprawia wykrywanie aktualizacji. Wskaźnik wersji odświeża GitHub po powrocie do aplikacji, ma ręczny przycisk sprawdzania i pokazuje błąd połączenia zamiast milcząco ukrywać stan. Zapytanie o najnowszy release wymusza brak cache. Pozostałe funkcje 0.5.21, w tym login autora i przeglądy zaplanowane po QR, pozostają bez zmian."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
