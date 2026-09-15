@@ -4,6 +4,24 @@
 
 WMM ma korzystać z funkcji i modelu danych, które już istnieją w Warsztat Menager. Nie dodajemy nowych typów statusów, serwisów ani równoległego modelu danych tylko na potrzeby telefonu; zmiany po stronie WM mają ograniczać się do bezpiecznego API/mostu do istniejących funkcji, chyba że osobno zapadnie decyzja o rozwoju samego WM.
 
+## Najbliższe wydanie — stabilizacja 0.6.0
+
+**Status: następny etap.**
+
+Zakres:
+
+- stabilizacja połączenia po utracie Wi-Fi / zmianie sieci;
+- ponawianie operacji bez dublowania zapisów;
+- czytelne komunikaty błędów bez technicznych wyjątków;
+- historia / informacja o ostatniej synchronizacji;
+- przejścia z powiadomień do konkretnego obiektu tam, gdzie obecny model WMM już to obsługuje;
+- test pełnej ścieżki `QR → akcja → zapis w WM`;
+- bez dokładania nowych funkcji biznesowych do desktopowego WM.
+
+### Branding następnego wydania
+
+Przy następnym wydaniu usunąć widoczny napis **`BETA`** z nazwy aplikacji, etykiety Androida, nagłówków/ekranów oraz tytułu release. Numer wersji ma pozostać widoczny, np. `WMM 0.6.0`.
+
 ## Powiadomienie o awarii na wybrany telefon
 
 **Status: planowane — osobny etap po ustabilizowaniu bieżących akcji Maszyn.**
