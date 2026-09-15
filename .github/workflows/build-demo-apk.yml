@@ -48,6 +48,7 @@ jobs:
           python scripts/apply_warehouse_finalize.py
           python scripts/apply_warehouse_bars.py
           python scripts/apply_machine_quick_actions.py
+          python scripts/apply_machine_quick_actions_finalize.py
 
       - name: Prepare stable release signing
         shell: bash
