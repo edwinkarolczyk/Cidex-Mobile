@@ -1,4 +1,4 @@
-# WMM 0.5.17
+# WMM 0.5.18
 name: Build WMM APK
 
 on:
@@ -47,6 +47,7 @@ jobs:
           python scripts/apply_warehouse.py
           python scripts/apply_warehouse_finalize.py
           python scripts/apply_warehouse_bars.py
+          python scripts/apply_machine_quick_actions.py
 
       - name: Prepare stable release signing
         shell: bash
@@ -86,7 +87,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.17 --build-number 67
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.18 --build-number 68
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
@@ -100,9 +101,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.17-beta"
-          TITLE="WMM 0.5.17 BETA"
-          NOTES="WMM 0.5.17 BETA poprawia przyjęcia Magazynu tak, aby dla pozycji liczonych w mm działały jak desktopowy WM: zamiast jednej ilości są pola Liczba sztang i Długość sztangi [mm]. WMM wymaga całkowitej dodatniej liczby sztang, dodatniej długości i przed zapisem pokazuje przeliczenie sztangi × długość oraz stan przed i po. Dla pozostałych jednostek nadal używane jest zwykłe pole ilości."
+          TAG="v0.5.18-beta"
+          TITLE="WMM 0.5.18 BETA"
+          NOTES="WMM 0.5.18 BETA dodaje po zeskanowaniu/otwarciu maszyny szybkie działania zgodne z istniejącym modelem Warsztat Menager. Szybka naprawa korzysta wyłącznie ze statusów Awaria -> Sprawna i istniejącej historii statusów, dzięki czemu WM zapisuje czas trwania naprawy. Dodaj przegląd planowany zapisuje zwykły ręczny wpis reviews z jednym z istniejących typów WM: Przegląd okresowy, Serwis planowany, Konserwacja, Kalibracja, Czyszczenie lub Inne. Wpisy mobilne są oznaczone [WMM] w istniejącym opisie/uwadze; nie dodano nowych typów ani modelu danych WM. Wymaga aktualnego WM z gałęzi Rozwiniecie i ponownego uruchomienia WM po aktualizacji."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
