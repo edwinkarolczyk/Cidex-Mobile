@@ -1,4 +1,4 @@
-# WMM 0.5.18
+# WMM 0.5.19
 name: Build WMM APK
 
 on:
@@ -88,13 +88,13 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.18 --build-number 68
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.19 --build-number 69
 
       - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk WMM-BETA.apk
+        run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
 
       - name: Show APK size
-        run: ls -lh WMM-BETA.apk
+        run: ls -lh WMM.apk
 
       - name: Publish GitHub update release
         if: env.WMM_STABLE_SIGNING == 'true'
@@ -102,17 +102,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.18-beta"
-          TITLE="WMM 0.5.18 BETA"
-          NOTES="WMM 0.5.18 BETA dodaje po zeskanowaniu/otwarciu maszyny szybkie działania zgodne z istniejącym modelem Warsztat Menager. Szybka naprawa korzysta wyłącznie ze statusów Awaria -> Sprawna i istniejącej historii statusów, dzięki czemu WM zapisuje czas trwania naprawy. Dodaj przegląd planowany zapisuje zwykły ręczny wpis reviews z jednym z istniejących typów WM: Przegląd okresowy, Serwis planowany, Konserwacja, Kalibracja, Czyszczenie lub Inne. Wpisy mobilne są oznaczone [WMM] w istniejącym opisie/uwadze; nie dodano nowych typów ani modelu danych WM. Wymaga aktualnego WM z gałęzi Rozwiniecie i ponownego uruchomienia WM po aktualizacji."
+          TAG="v0.5.19"
+          TITLE="WMM 0.5.19"
+          NOTES="WMM 0.5.19 poprawia szybką naprawę Maszyn: jedna naprawa zapisuje jeden rzeczywisty okres Awarii z czasem trwania, bez dodatkowych technicznych wpisów rozpoczęcia/zakończenia w drugiej historii. Usunięto z telefonu możliwość tworzenia planowanych przeglądów; WMM pokazuje wyłącznie wpisy zaplanowane wcześniej w desktopowym WM lub utworzone przez jego automatykę. Widoczny napis BETA został usunięty z aplikacji i wydania. Wymaga aktualnego WM z gałęzi Rozwiniecie i ponownego uruchomienia WM po aktualizacji."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
-              if gh release upload "$TAG" WMM-BETA.apk --clobber; then
+              if gh release upload "$TAG" WMM.apk --clobber; then
                 exit 0
               fi
             else
-              if gh release create "$TAG" WMM-BETA.apk --target "$GITHUB_SHA" --title "$TITLE" --notes "$NOTES"; then
+              if gh release create "$TAG" WMM.apk --target "$GITHUB_SHA" --title "$TITLE" --notes "$NOTES"; then
                 exit 0
               fi
             fi
@@ -125,6 +125,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: WMM-BETA-apk
-          path: WMM-BETA.apk
+          name: WMM-apk
+          path: WMM.apk
           if-no-files-found: error
