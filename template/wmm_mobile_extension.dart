@@ -393,13 +393,51 @@ class _ToolScreenState extends State<ToolScreen> {
     return result;
   }
 
-  Future<void> setStatus(String status) async {
-    final note = await askNote(status);
+  Future<void> setStatus(String status, String label) async {
+    final note = await askNote(label);
     if (note == null) return;
     await runAction(
       () => widget.api.setToolStatus(widget.toolId, status, note),
       'Status narzędzia zapisany w WM.',
     );
+  }
+
+  Future<void> chooseStatus() async {
+    if (statusOptions.isEmpty) return;
+    final current = '${tool['status_label'] ?? tool['status'] ?? ''}'.trim().toLowerCase();
+    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.only(bottom: 12),
+          children: [
+            const ListTile(
+              title: Text('Zmień status', style: TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: Text('Statusy pochodzą z ustawień tego rodzaju narzędzia w WM.'),
+            ),
+            ...statusOptions.map((option) {
+              final id = '${option['id'] ?? option['name'] ?? ''}'.trim();
+              final name = '${option['name'] ?? option['id'] ?? ''}'.trim();
+              final active = name.toLowerCase() == current;
+              return ListTile(
+                leading: Icon(statusIcon(name), color: statusColor(name)),
+                title: Text(name),
+                trailing: active ? const Icon(Icons.check_rounded, color: kGreen) : null,
+                enabled: id.isNotEmpty,
+                onTap: id.isEmpty ? null : () => Navigator.pop(sheetContext, option),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+    if (selected == null) return;
+    final id = '${selected['id'] ?? selected['name'] ?? ''}'.trim();
+    final name = '${selected['name'] ?? selected['id'] ?? ''}'.trim();
+    if (name.toLowerCase() == current) return;
+    await setStatus(id, name);
   }
 
   Color statusColor(String name) {
@@ -525,16 +563,12 @@ class _ToolScreenState extends State<ToolScreen> {
                   childAspectRatio: 1.45,
                   children: [
                     MachineActionButton(color: kOrange, icon: Icons.add_a_photo_rounded, text: 'Dodaj zdjęcie', onTap: choosePhoto),
-                    ...statusOptions.map((option) {
-                      final id = '${option['id'] ?? option['name'] ?? ''}'.trim();
-                      final name = '${option['name'] ?? option['id'] ?? ''}'.trim();
-                      return MachineActionButton(
-                        color: statusColor(name),
-                        icon: statusIcon(name),
-                        text: name,
-                        onTap: () => setStatus(id),
-                      );
-                    }),
+                    MachineActionButton(
+                      color: kBlue,
+                      icon: Icons.sync_alt_rounded,
+                      text: 'Zmień status',
+                      onTap: chooseStatus,
+                    ),
                   ],
                 ),
                 if (statusOptions.isEmpty) ...[
