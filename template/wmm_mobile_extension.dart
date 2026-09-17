@@ -129,6 +129,13 @@ extension WmmApiExtension on WmApi {
     return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
   }
 
+  Future<List<Map<String, dynamic>>> toolStatuses(String id) async {
+    final payload = await getJson(
+      '/api/v1/tools/${Uri.encodeComponent(id)}/statuses',
+    );
+    return _items(payload);
+  }
+
   Future<Map<String, dynamic>> setToolStatus(String id, String status, String note) async {
     final payload = await postJson(
       '/api/v1/tools/${Uri.encodeComponent(id)}/status',
@@ -328,6 +335,7 @@ class ToolScreen extends StatefulWidget {
 class _ToolScreenState extends State<ToolScreen> {
   final picker = ImagePicker();
   Map<String, dynamic> tool = {};
+  List<Map<String, dynamic>> statusOptions = [];
   bool busy = true;
   bool actionBusy = false;
   String error = '';
@@ -344,9 +352,15 @@ class _ToolScreenState extends State<ToolScreen> {
       error = '';
     });
     try {
-      final row = await widget.api.tool(widget.toolId);
+      final result = await Future.wait([
+        widget.api.tool(widget.toolId),
+        widget.api.toolStatuses(widget.toolId),
+      ]);
       if (!mounted) return;
-      setState(() => tool = row);
+      setState(() {
+        tool = result[0] as Map<String, dynamic>;
+        statusOptions = result[1] as List<Map<String, dynamic>>;
+      });
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
     } finally {
@@ -386,6 +400,22 @@ class _ToolScreenState extends State<ToolScreen> {
       () => widget.api.setToolStatus(widget.toolId, status, note),
       'Status narzędzia zapisany w WM.',
     );
+  }
+
+  Color statusColor(String name) {
+    final value = name.toLowerCase();
+    if (value.contains('napraw') || value.contains('awari') || value.contains('uszkodz')) return kRed;
+    if (value.contains('ostrz') || value.contains('serwis')) return kOrange;
+    if (value.contains('dostęp') || value.contains('dostep') || value.contains('gotow')) return kGreen;
+    return kBlue;
+  }
+
+  IconData statusIcon(String name) {
+    final value = name.toLowerCase();
+    if (value.contains('ostrz')) return Icons.content_cut_rounded;
+    if (value.contains('napraw') || value.contains('awari') || value.contains('uszkodz')) return Icons.build_rounded;
+    if (value.contains('dostęp') || value.contains('dostep') || value.contains('gotow')) return Icons.check_circle_rounded;
+    return Icons.sync_alt_rounded;
   }
 
   Future<void> choosePhoto() async {
@@ -495,11 +525,27 @@ class _ToolScreenState extends State<ToolScreen> {
                   childAspectRatio: 1.45,
                   children: [
                     MachineActionButton(color: kOrange, icon: Icons.add_a_photo_rounded, text: 'Dodaj zdjęcie', onTap: choosePhoto),
-                    MachineActionButton(color: kRed, icon: Icons.build_rounded, text: 'Do naprawy', onTap: () => setStatus('do naprawy')),
-                    MachineActionButton(color: kOrange, icon: Icons.content_cut_rounded, text: 'Do ostrzenia', onTap: () => setStatus('do ostrzenia')),
-                    MachineActionButton(color: kGreen, icon: Icons.check_circle_rounded, text: 'Dostępne', onTap: () => setStatus('dostępne')),
+                    ...statusOptions.map((option) {
+                      final id = '${option['id'] ?? option['name'] ?? ''}'.trim();
+                      final name = '${option['name'] ?? option['id'] ?? ''}'.trim();
+                      return MachineActionButton(
+                        color: statusColor(name),
+                        icon: statusIcon(name),
+                        text: name,
+                        onTap: () => setStatus(id),
+                      );
+                    }),
                   ],
                 ),
+                if (statusOptions.isEmpty) ...[
+                  const SizedBox(height: 10),
+                  const RoundedCard(
+                    child: Text(
+                      'Brak statusów przypisanych w WM do tego rodzaju narzędzia.',
+                      style: TextStyle(color: kMuted),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 18),
                 Row(
                   children: [

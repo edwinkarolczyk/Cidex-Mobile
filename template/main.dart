@@ -1257,9 +1257,10 @@ class _MachineScreenState extends State<MachineScreen> {
   }
 
   Future<void> setStatus(String status) async {
-    final requiresNote = status != 'Sprawna';
+    final label = wmmMachineStatusLabel(status);
+    final requiresNote = status != 'ok';
     final note = await askText(
-      status == 'Awaria' ? 'Zgłoś awarię' : 'Serwis / przegląd',
+      status == 'warn' ? 'Zgłoś awarię' : label,
       requiresNote ? 'Krótko opisz powód...' : 'Opcjonalna uwaga',
       required: requiresNote,
     );
@@ -1432,9 +1433,9 @@ class _MachineScreenState extends State<MachineScreen> {
                   childAspectRatio: 1.45,
                   children: [
                     MachineActionButton(color: kPurple, icon: Icons.add_a_photo_rounded, text: 'Dodaj zdjęcie', onTap: choosePhoto),
-                    MachineActionButton(color: kRed, icon: Icons.warning_amber_rounded, text: 'Zgłoś awarię', onTap: () => setStatus('Awaria')),
+                    MachineActionButton(color: kRed, icon: Icons.warning_amber_rounded, text: 'Zgłoś awarię', onTap: () => setStatus('warn')),
                     MachineActionButton(color: kBlue, icon: Icons.note_add_rounded, text: 'Dodaj uwagę', onTap: addNote),
-                    MachineActionButton(color: kOrange, icon: Icons.build_circle_rounded, text: 'Serwis / przegląd', onTap: () => setStatus('Serwis / przegląd')),
+                    MachineActionButton(color: kOrange, icon: Icons.build_circle_rounded, text: 'Serwis / przegląd', onTap: () => setStatus('alert')),
                   ],
                 ),
                 if (status != 'ok') ...[
@@ -1444,7 +1445,7 @@ class _MachineScreenState extends State<MachineScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () async {
                         await runAction(
-                          () => widget.api.setStatus(widget.machineId, 'Sprawna', ''),
+                          () => widget.api.setStatus(widget.machineId, 'ok', ''),
                           'Maszyna oznaczona jako sprawna.',
                         );
                       },

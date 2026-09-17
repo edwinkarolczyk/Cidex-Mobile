@@ -1,4 +1,4 @@
-# WMM 0.5.24
+# WMM 0.5.25
 name: Build WMM APK
 
 on:
@@ -94,7 +94,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.24 --build-number 74
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.25 --build-number 75
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
@@ -108,9 +108,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.24"
-          TITLE="WMM 0.5.24"
-          NOTES="WMM 0.5.24 dodaje bezpośrednią akcję WYKONANO przy przeglądach widocznych po QR. Wykonanie zapisuje się do istniejącego przeglądu WM z datą, loginem i opcjonalną notatką; nie powstaje nowy wpis ani duplikat. Dla rozpoczętego przeglądu przycisk ma nazwę ZAKOŃCZ PRZEGLĄD."
+          TAG="v0.5.25"
+          TITLE="WMM 0.5.25"
+          NOTES="WMM 0.5.25 pobiera statusy narzędzi z ustawień WM zamiast używać stałej listy. Zmiany statusów maszyn wysyłają kanoniczne kody WM, a serwer waliduje status przed zapisem."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
