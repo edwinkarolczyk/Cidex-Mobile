@@ -30,6 +30,39 @@ void main() {
     expect(wmmMachineStatusLabel('warm'), 'Awaria');
   });
 
+  test('WMM opisuje historię narzędzia po polsku i ze szczegółami', () {
+    final status = <String, dynamic>{
+      'ts': '2026-09-17T07:49:00',
+      'by': 'Edwin',
+      'action': 'status_changed',
+      'z': 'Przegląd',
+      'na': 'W ostrzeniu',
+    };
+    final task = <String, dynamic>{
+      'ts': '2026-09-17T07:48:30',
+      'by': 'Edwin',
+      'action': 'task_done',
+      'title': 'Demontaż elementów trących',
+    };
+
+    expect(wmmHistoryActionLabel(status), 'Zmiana statusu');
+    expect(wmmHistoryDetails(status), 'Przegląd → W ostrzeniu');
+    expect(wmmHistoryActionLabel(task), 'Zadanie wykonane');
+    expect(wmmHistoryDetails(task), 'Demontaż elementów trących');
+  });
+
+  test('WMM grupuje historię z tej samej minuty i tego samego autora', () {
+    final groups = wmmHistoryGroups(<Map<String, dynamic>>[
+      {'ts': '2026-09-17T07:48:10', 'by': 'Edwin', 'action': 'task_added', 'title': 'Kontrola'},
+      {'ts': '2026-09-17T07:48:50', 'by': 'Edwin', 'action': 'task_done', 'title': 'Kontrola'},
+      {'ts': '2026-09-17T07:49:00', 'by': 'Edwin', 'action': 'status_changed', 'z': 'Przegląd', 'na': 'W ostrzeniu'},
+      {'ts': '2026-09-17T07:50:00', 'by': '', 'action': 'info'},
+    ]);
+
+    expect(groups.length, 2);
+    expect((groups.last['items'] as List).length, 2);
+  });
+
   test('WMM 0.5.16 ma centrum powiadomień z klientem WM', () {
     const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
     final api = WmApi(config);

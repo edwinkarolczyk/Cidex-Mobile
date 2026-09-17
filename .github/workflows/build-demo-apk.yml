@@ -1,4 +1,4 @@
-# WMM 0.5.25
+# WMM 0.5.26
 name: Build WMM APK
 
 on:
@@ -94,7 +94,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.25 --build-number 75
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.26 --build-number 76
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
@@ -108,9 +108,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.25"
-          TITLE="WMM 0.5.25"
-          NOTES="WMM 0.5.25 pobiera statusy narzędzi z ustawień WM zamiast używać stałej listy. Zmiany statusów maszyn wysyłają kanoniczne kody WM, a serwer waliduje status przed zapisem."
+          TAG="v0.5.26"
+          TITLE="WMM 0.5.26"
+          NOTES="WMM 0.5.26 pokazuje historię narzędzi po polsku, z właściwymi szczegółami i grupowaniem zdarzeń. Puste wpisy i techniczne nazwy akcji nie zaśmiecają już widoku."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then

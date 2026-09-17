@@ -70,30 +70,124 @@ class WmmObjectThumb extends StatelessWidget {
   }
 }
 
-class WmmHistorySection extends StatelessWidget {
+String wmmHistoryActionLabel(Map<String, dynamic> row) {
+  final raw = (row['co'] ?? row['action'] ?? row['typ'] ?? '').toString().trim();
+  final key = raw.toLowerCase();
+  if (key.startsWith('status:')) return 'Zmiana statusu';
+  const labels = <String, String>{
+    'status_changed': 'Zmiana statusu',
+    'task_added': 'Dodano zadanie',
+    'task_done': 'Zadanie wykonane',
+    'task_note': 'Notatka do zadania',
+    'visit': 'Wizyta',
+    'cycle_closed': 'Zakończono wizytę',
+  };
+  if (labels.containsKey(key)) return labels[key]!;
+  if (raw.isEmpty) return 'Zmiana';
+  final readable = raw.replaceAll('_', ' ');
+  return '${readable[0].toUpperCase()}${readable.substring(1)}';
+}
+
+String wmmHistoryDetails(Map<String, dynamic> row) {
+  final action = (row['action'] ?? row['typ'] ?? '').toString().trim().toLowerCase();
+  final rawWhat = (row['co'] ?? '').toString().trim();
+  final direct = (row['details'] ?? row['uwaga'] ?? row['note'] ?? '').toString().trim();
+  if (direct.isNotEmpty) return direct;
+  if (action == 'status_changed' || row['z'] != null || row['na'] != null) {
+    final before = (row['z'] ?? row['from'] ?? '').toString().trim();
+    final after = (row['na'] ?? row['to'] ?? row['status'] ?? '').toString().trim();
+    if (before.isNotEmpty && after.isNotEmpty) return '$before → $after';
+    return after.isNotEmpty ? after : before;
+  }
+  if (action == 'task_added' || action == 'task_done' || action == 'task_note') {
+    return (row['title'] ?? row['task'] ?? row['task_id'] ?? '').toString().trim();
+  }
+  if (action == 'visit' || action == 'cycle_closed') {
+    return (row['comment'] ?? row['komentarz'] ?? row['status'] ?? '').toString().trim();
+  }
+  if (rawWhat.toLowerCase().startsWith('status:')) {
+    return rawWhat.substring(rawWhat.indexOf(':') + 1).trim();
+  }
+  return (row['comment'] ?? row['status'] ?? '').toString().trim();
+}
+
+String wmmHistoryWhen(Map<String, dynamic> row) =>
+    (row['ts'] ?? row['kiedy'] ?? row['created_at'] ?? '').toString().trim();
+
+String wmmHistoryWho(Map<String, dynamic> row) =>
+    (row['by'] ?? row['kto'] ?? row['author'] ?? row['changed_by'] ?? '').toString().trim();
+
+String wmmHistoryMinuteKey(Map<String, dynamic> row) {
+  final value = wmmHistoryWhen(row).replaceFirst('T', ' ');
+  return value.length >= 16 ? value.substring(0, 16) : value;
+}
+
+bool wmmHistoryIsMeaningful(Map<String, dynamic> row) {
+  final raw = (row['co'] ?? row['action'] ?? row['typ'] ?? '').toString().trim().toLowerCase();
+  if (wmmHistoryDetails(row).isNotEmpty) return true;
+  return !<String>{
+    '',
+    'info',
+    'status_changed',
+    'task_added',
+    'task_done',
+    'task_note',
+    'visit',
+    'cycle_closed',
+  }.contains(raw);
+}
+
+List<Map<String, dynamic>> wmmHistoryGroups(dynamic history) {
+  final rows = (history as List? ?? const [])
+      .whereType<Map>()
+      .map(Map<String, dynamic>.from)
+      .toList()
+      .reversed;
+  final groups = <Map<String, dynamic>>[];
+  for (final row in rows) {
+    if (!wmmHistoryIsMeaningful(row)) continue;
+    final minute = wmmHistoryMinuteKey(row);
+    final who = wmmHistoryWho(row);
+    final key = '$minute|$who';
+    if (groups.isEmpty || groups.last['key'] != key) {
+      groups.add(<String, dynamic>{
+        'key': key,
+        'when': minute,
+        'who': who,
+        'items': <Map<String, dynamic>>[],
+      });
+    }
+    (groups.last['items'] as List<Map<String, dynamic>>).add(row);
+  }
+  return groups;
+}
+
+class WmmHistorySection extends StatefulWidget {
   const WmmHistorySection({super.key, required this.history, required this.title});
 
   final dynamic history;
   final String title;
 
   @override
+  State<WmmHistorySection> createState() => _WmmHistorySectionState();
+}
+
+class _WmmHistorySectionState extends State<WmmHistorySection> {
+  bool showAll = false;
+
+  @override
   Widget build(BuildContext context) {
-    final rows = (history as List? ?? const [])
-        .whereType<Map>()
-        .map(Map<String, dynamic>.from)
-        .toList()
-        .reversed
-        .take(20)
-        .toList();
+    final groups = wmmHistoryGroups(widget.history);
+    final visible = showAll ? groups : groups.take(10).toList();
 
     return RoundedCard(
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsets.only(top: 6),
         leading: const Icon(Icons.history_rounded, color: kOrange),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
-        subtitle: Text('${rows.length} ostatnich wpisów', style: const TextStyle(color: kMuted)),
-        children: rows.isEmpty
+        title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        subtitle: Text('${groups.length} grup historii', style: const TextStyle(color: kMuted)),
+        children: groups.isEmpty
             ? const [
                 Padding(
                   padding: EdgeInsets.only(bottom: 8),
@@ -103,39 +197,59 @@ class WmmHistorySection extends StatelessWidget {
                   ),
                 ),
               ]
-            : rows.map((row) {
-                final when = (row['kiedy'] ?? row['created_at'] ?? '').toString().trim();
-                final who = (row['kto'] ?? row['author'] ?? '—').toString().trim();
-                final what = (row['co'] ?? row['action'] ?? 'zmiana').toString().trim();
-                final note = (row['uwaga'] ?? row['note'] ?? '').toString().trim();
+            : [
+                ...visible.map((group) {
+                final when = (group['when'] ?? '').toString();
+                final who = (group['who'] ?? '').toString();
+                final items = group['items'] as List<Map<String, dynamic>>;
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(top: 4),
-                        child: Icon(Icons.circle, size: 8, color: kOrange),
+                      Text(
+                        [when, who].where((value) => value.isNotEmpty).join(' • '),
+                        style: const TextStyle(color: kMuted, fontSize: 12, fontWeight: FontWeight.w700),
                       ),
-                      const SizedBox(width: 9),
-                      Expanded(
-                        child: Column(
+                      const SizedBox(height: 6),
+                      ...items.map((row) {
+                        final title = wmmHistoryActionLabel(row);
+                        final details = wmmHistoryDetails(row);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 7),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 5),
+                                child: Icon(Icons.circle, size: 7, color: kOrange),
+                              ),
+                              const SizedBox(width: 9),
+                              Expanded(child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(what, style: const TextStyle(fontWeight: FontWeight.w800)),
-                            if (note.isNotEmpty)
-                              Text(note, style: const TextStyle(color: Color(0xFFC6CBD1))),
-                            Text(
-                              [when, who].where((value) => value.isNotEmpty).join(' • '),
-                              style: const TextStyle(color: kMuted, fontSize: 12),
-                            ),
+                            Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                            if (details.isNotEmpty)
+                              Text(details, style: const TextStyle(color: Color(0xFFC6CBD1))),
                           ],
-                        ),
-                      ),
+                        )),
+                            ],
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 );
-              }).toList(),
+              }),
+              if (groups.length > 10)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => setState(() => showAll = !showAll),
+                    child: Text(showAll ? 'Pokaż mniej' : 'Pokaż całą historię (${groups.length})'),
+                  ),
+                ),
+            ],
       ),
     );
   }
