@@ -166,4 +166,29 @@ void main() {
     expect(detail.api, same(api));
     expect(wmmWarehouseItemId(detail.initial), 'SR001');
   });
+  test('WMM zachowuje request-id do bezpiecznego ponowienia zapisu', () {
+    const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
+    final api = WmApi(config);
+    const path = '/api/v1/tools/001/status';
+    const payload = '{"status":"READY","note":""}';
+
+    final first = api.beginWriteRequest(path, payload);
+    final retry = api.beginWriteRequest(path, payload);
+    expect(retry, first);
+    expect(api.writeHeaders(first)['X-WMM-Request-ID'], first);
+
+    api.completeWriteRequest(path, payload);
+    final next = api.beginWriteRequest(path, payload);
+    expect(next, isNot(first));
+    api.completeWriteRequest(path, payload);
+  });
+
+  test('WMM rozpoznaje aktualny status po kodzie albo etykiecie', () {
+    const option = <String, dynamic>{'id': 'READY', 'name': 'Dostępne'};
+    expect(wmmToolStatusIsCurrent(const {'status': 'READY'}, option), isTrue);
+    expect(wmmToolStatusIsCurrent(const {'status': 'Dostępne'}, option), isTrue);
+    expect(wmmToolStatusIsCurrent(const {'status_label': 'Dostępne'}, option), isTrue);
+    expect(wmmToolStatusIsCurrent(const {'status': 'Do naprawy'}, option), isFalse);
+  });
+
 }
