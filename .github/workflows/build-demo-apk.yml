@@ -1,4 +1,4 @@
-# WMM 0.5.27
+# WMM 0.5.28
 name: Build WMM APK
 
 on:
@@ -94,7 +94,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.27 --build-number 77
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.28 --build-number 78
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
@@ -108,9 +108,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.27"
-          TITLE="WMM 0.5.27"
-          NOTES="WMM 0.5.27 zastępuje kafelki statusów jedną listą zgodną z edycją Narzędzia w WM. Ponowne wybranie aktualnego statusu nie wykonuje zapisu ani nie tworzy historii."
+          TAG="v0.5.28"
+          TITLE="WMM 0.5.28"
+          NOTES="WMM 0.5.28 zabezpiecza zapisy przed duplikatami po utracie Wi-Fi, nie blokuje karty narzędzia przy błędzie pobierania statusów i odświeża statusy z WM przed każdą zmianą."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
