@@ -59,12 +59,55 @@ class CidexApi {
   final String baseUrl;
   final String token;
 
+  static final Map<String, String> _pendingWriteIds = <String, String>{};
+  static final Map<String, DateTime> _pendingWriteCreated = <String, DateTime>{};
+  static const Duration _pendingWriteTtl = Duration(minutes: 10);
+
   Map<String, String> get headers => {
         'Accept': 'application/json',
         'X-Cidex-Token': token,
       };
 
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
+
+  String _writeFingerprint(String path, String payloadKey) =>
+      '$baseUrl|${token.hashCode}|$path|$payloadKey';
+
+  void _prunePendingWrites() {
+    final now = DateTime.now();
+    final stale = _pendingWriteCreated.entries
+        .where((entry) => now.difference(entry.value) > _pendingWriteTtl)
+        .map((entry) => entry.key)
+        .toList();
+    for (final key in stale) {
+      _pendingWriteCreated.remove(key);
+      _pendingWriteIds.remove(key);
+    }
+  }
+
+  String beginWriteRequest(String path, String payloadKey) {
+    _prunePendingWrites();
+    final fingerprint = _writeFingerprint(path, payloadKey);
+    final existing = _pendingWriteIds[fingerprint];
+    if (existing != null && existing.isNotEmpty) return existing;
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final suffix = fingerprint.hashCode.toUnsigned(32).toRadixString(16);
+    final requestId = 'wmm-$stamp-$suffix';
+    _pendingWriteIds[fingerprint] = requestId;
+    _pendingWriteCreated[fingerprint] = DateTime.now();
+    return requestId;
+  }
+
+  void completeWriteRequest(String path, String payloadKey) {
+    final fingerprint = _writeFingerprint(path, payloadKey);
+    _pendingWriteIds.remove(fingerprint);
+    _pendingWriteCreated.remove(fingerprint);
+  }
+
+  Map<String, String> writeHeaders(String requestId) => {
+        ...headers,
+        'X-WMM-Request-ID': requestId,
+      };
 
   Future<Map<String, dynamic>> _decode(http.Response response) async {
     Map<String, dynamic> payload = {};
@@ -105,21 +148,27 @@ class CidexApi {
     String path,
     Map<String, dynamic> body,
   ) async {
+    final encodedBody = jsonEncode(body);
+    final requestId = beginWriteRequest(path, encodedBody);
     try {
       final response = await http
           .post(
             _uri(path),
             headers: {
-              ...headers,
+              ...writeHeaders(requestId),
               'Content-Type': 'application/json; charset=utf-8',
             },
-            body: jsonEncode(body),
+            body: encodedBody,
           )
           .timeout(const Duration(seconds: 10));
-      return _decode(response);
+      final payload = await _decode(response);
+      completeWriteRequest(path, encodedBody);
+      return payload;
     } on ApiException {
       rethrow;
     } catch (error) {
+      // Przy timeout / zerwaniu Wi-Fi zachowaj request-id. Ponowienie tej samej
+      // operacji dostanie ten sam klucz i WM nie wykona zapisu drugi raz.
       throw ApiException('Nie udało się wysłać danych do CIDEX: $error');
     }
   }
@@ -179,16 +228,17 @@ class CidexApi {
   }
 
   Future<Map<String, dynamic>> uploadPhoto(String id, XFile file) async {
+    final path = '/api/v1/machines/${Uri.encodeComponent(id)}/photos';
+    final payloadKey = 'photo:${file.path}:${await file.length()}';
+    final requestId = beginWriteRequest(path, payloadKey);
     try {
-      final request = http.MultipartRequest(
-        'POST',
-        _uri('/api/v1/machines/${Uri.encodeComponent(id)}/photos'),
-      );
-      request.headers.addAll(headers);
+      final request = http.MultipartRequest('POST', _uri(path));
+      request.headers.addAll(writeHeaders(requestId));
       request.files.add(await http.MultipartFile.fromPath('photo', file.path));
       final streamed = await request.send().timeout(const Duration(seconds: 25));
       final response = await http.Response.fromStream(streamed);
       final payload = await _decode(response);
+      completeWriteRequest(path, payloadKey);
       return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
     } on ApiException {
       rethrow;
