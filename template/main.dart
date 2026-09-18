@@ -229,7 +229,8 @@ class CidexApi {
 
   Future<Map<String, dynamic>> uploadPhoto(String id, XFile file) async {
     final path = '/api/v1/machines/${Uri.encodeComponent(id)}/photos';
-    final payloadKey = 'photo:${file.path}:${await file.length()}';
+    final fileLength = await file.length();
+    final payloadKey = 'photo:${file.path}:$fileLength';
     final requestId = beginWriteRequest(path, payloadKey);
     try {
       final request = http.MultipartRequest('POST', _uri(path));
