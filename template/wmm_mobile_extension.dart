@@ -1,3 +1,16 @@
+bool wmmToolStatusIsCurrent(
+  Map<String, dynamic> tool,
+  Map<String, dynamic> option,
+) {
+  final current = <String>{
+    (tool['status'] ?? '').toString().trim().toLowerCase(),
+    (tool['status_label'] ?? '').toString().trim().toLowerCase(),
+  }..remove('');
+  final id = (option['id'] ?? option['name'] ?? '').toString().trim().toLowerCase();
+  final name = (option['name'] ?? option['id'] ?? '').toString().trim().toLowerCase();
+  return current.contains(id) || current.contains(name);
+}
+
 class WmmPairingData {
   const WmmPairingData({required this.baseUrl, required this.key});
 
@@ -145,16 +158,17 @@ extension WmmApiExtension on WmApi {
   }
 
   Future<Map<String, dynamic>> uploadToolPhoto(String id, XFile file) async {
+    final path = '/api/v1/tools/${Uri.encodeComponent(id)}/photos';
+    final payloadKey = 'photo:${file.path}:${await file.length()}';
+    final requestId = beginWriteRequest(path, payloadKey);
     try {
-      final request = http.MultipartRequest(
-        'POST',
-        _uri('/api/v1/tools/${Uri.encodeComponent(id)}/photos'),
-      );
-      request.headers.addAll(headers);
+      final request = http.MultipartRequest('POST', _uri(path));
+      request.headers.addAll(writeHeaders(requestId));
       request.files.add(await http.MultipartFile.fromPath('photo', file.path));
       final streamed = await request.send().timeout(const Duration(seconds: 25));
       final response = await http.Response.fromStream(streamed);
       final payload = await _decode(response);
+      completeWriteRequest(path, payloadKey);
       return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
     } on ApiException {
       rethrow;
@@ -339,6 +353,7 @@ class _ToolScreenState extends State<ToolScreen> {
   bool busy = true;
   bool actionBusy = false;
   String error = '';
+  String statusLoadError = '';
 
   @override
   void initState() {
@@ -350,21 +365,65 @@ class _ToolScreenState extends State<ToolScreen> {
     setState(() {
       busy = true;
       error = '';
+      statusLoadError = '';
     });
     try {
-      final result = await Future.wait([
-        widget.api.tool(widget.toolId),
-        widget.api.toolStatuses(widget.toolId),
-      ]);
+      // Dane narzędzia są krytyczne. Lista statusów jest dodatkiem i jej awaria
+      // nie może blokować całej karty, zdjęć ani historii.
+      final row = await widget.api.tool(widget.toolId);
+      var options = <Map<String, dynamic>>[];
+      var statusError = '';
+      try {
+        options = await widget.api.toolStatuses(widget.toolId);
+      } catch (e) {
+        statusError = e.toString();
+      }
       if (!mounted) return;
       setState(() {
-        tool = result[0] as Map<String, dynamic>;
-        statusOptions = result[1] as List<Map<String, dynamic>>;
+        tool = row;
+        statusOptions = options;
+        statusLoadError = statusError;
       });
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
     } finally {
       if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<bool> refreshStatusContext({bool showError = false}) async {
+    try {
+      final latestTool = await widget.api.tool(widget.toolId);
+      if (!mounted) return false;
+      setState(() => tool = latestTool);
+      try {
+        final latestOptions = await widget.api.toolStatuses(widget.toolId);
+        if (!mounted) return false;
+        setState(() {
+          statusOptions = latestOptions;
+          statusLoadError = '';
+        });
+        return true;
+      } catch (e) {
+        if (!mounted) return false;
+        setState(() => statusLoadError = e.toString());
+        if (showError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Nie udało się pobrać statusów z WM: $e'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return false;
+      }
+    } catch (e) {
+      if (mounted && showError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), behavior: SnackBarBehavior.floating),
+        );
+      }
+      return false;
     }
   }
 
@@ -400,11 +459,25 @@ class _ToolScreenState extends State<ToolScreen> {
       () => widget.api.setToolStatus(widget.toolId, status, note),
       'Status narzędzia zapisany w WM.',
     );
+    await refreshStatusContext();
   }
 
   Future<void> chooseStatus() async {
-    if (statusOptions.isEmpty) return;
-    final current = '${tool['status_label'] ?? tool['status'] ?? ''}'.trim().toLowerCase();
+    if (actionBusy) return;
+    setState(() => actionBusy = true);
+    final fresh = await refreshStatusContext(showError: true);
+    if (mounted) setState(() => actionBusy = false);
+    if (!fresh || !mounted) return;
+    if (statusOptions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Brak statusów przypisanych w WM do tego rodzaju narzędzia.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       showDragHandle: true,
@@ -415,12 +488,12 @@ class _ToolScreenState extends State<ToolScreen> {
           children: [
             const ListTile(
               title: Text('Zmień status', style: TextStyle(fontWeight: FontWeight.w900)),
-              subtitle: Text('Statusy pochodzą z ustawień tego rodzaju narzędzia w WM.'),
+              subtitle: Text('Statusy są odświeżane z WM przy każdym otwarciu listy.'),
             ),
             ...statusOptions.map((option) {
               final id = '${option['id'] ?? option['name'] ?? ''}'.trim();
               final name = '${option['name'] ?? option['id'] ?? ''}'.trim();
-              final active = name.toLowerCase() == current;
+              final active = wmmToolStatusIsCurrent(tool, option);
               return ListTile(
                 leading: Icon(statusIcon(name), color: statusColor(name)),
                 title: Text(name),
@@ -434,9 +507,9 @@ class _ToolScreenState extends State<ToolScreen> {
       ),
     );
     if (selected == null) return;
+    if (wmmToolStatusIsCurrent(tool, selected)) return;
     final id = '${selected['id'] ?? selected['name'] ?? ''}'.trim();
     final name = '${selected['name'] ?? selected['id'] ?? ''}'.trim();
-    if (name.toLowerCase() == current) return;
     await setStatus(id, name);
   }
 
@@ -571,7 +644,26 @@ class _ToolScreenState extends State<ToolScreen> {
                     ),
                   ],
                 ),
-                if (statusOptions.isEmpty) ...[
+                if (statusLoadError.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  RoundedCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Nie udało się pobrać listy statusów. Karta narzędzia nadal działa.',
+                          style: TextStyle(color: kMuted),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: actionBusy ? null : () => chooseStatus(),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('PONÓW POBRANIE STATUSÓW'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else if (statusOptions.isEmpty) ...[
                   const SizedBox(height: 10),
                   const RoundedCard(
                     child: Text(
