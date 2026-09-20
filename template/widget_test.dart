@@ -1,5 +1,6 @@
 import 'package:cidex_mobile/main.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('WMM ma klienta WM i formularz dodawania zlecenia', () {
@@ -166,21 +167,22 @@ void main() {
     expect(detail.api, same(api));
     expect(wmmWarehouseItemId(detail.initial), 'SR001');
   });
-  test('WMM zachowuje request-id do bezpiecznego ponowienia zapisu', () {
+  test('WMM zachowuje request-id także przy nowej instancji klienta', () async {
+    SharedPreferences.setMockInitialValues({});
     const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
     final api = WmApi(config);
     const path = '/api/v1/tools/001/status';
-    const payload = '{"status":"READY","note":""}';
+    const payload = '{"status":"READY","note":"test-restart-0529"}';
 
-    final first = api.beginWriteRequest(path, payload);
-    final retry = api.beginWriteRequest(path, payload);
-    expect(retry, first);
+    final first = await api.beginWriteRequest(path, payload);
+    final afterRestart = await WmApi(config).beginWriteRequest(path, payload);
+    expect(afterRestart, first);
     expect(api.writeHeaders(first)['X-WMM-Request-ID'], first);
 
-    api.completeWriteRequest(path, payload);
-    final next = api.beginWriteRequest(path, payload);
+    await api.completeWriteRequest(path, payload);
+    final next = await WmApi(config).beginWriteRequest(path, payload);
     expect(next, isNot(first));
-    api.completeWriteRequest(path, payload);
+    await api.completeWriteRequest(path, payload);
   });
 
   test('WMM rozpoznaje aktualny status po kodzie albo etykiecie', () {
