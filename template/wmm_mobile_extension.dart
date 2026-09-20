@@ -149,10 +149,13 @@ extension WmmApiExtension on WmApi {
     return _items(payload);
   }
 
-  Future<Map<String, dynamic>> setToolStatus(String id, String status, String note) async {
+  Future<Map<String, dynamic>> setToolStatus(
+    String id, String status, String note, {
+    String baseRevision = '',
+  }) async {
     final payload = await postJson(
       '/api/v1/tools/${Uri.encodeComponent(id)}/status',
-      {'status': status, 'note': note},
+      {'status': status, 'note': note, if (baseRevision.isNotEmpty) 'base_revision': baseRevision},
     );
     return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
   }
@@ -161,7 +164,7 @@ extension WmmApiExtension on WmApi {
     final path = '/api/v1/tools/${Uri.encodeComponent(id)}/photos';
     final fileLength = await file.length();
     final payloadKey = 'photo:${file.path}:$fileLength';
-    final requestId = beginWriteRequest(path, payloadKey);
+    final requestId = await beginWriteRequest(path, payloadKey);
     try {
       final request = http.MultipartRequest('POST', _uri(path));
       request.headers.addAll(writeHeaders(requestId));
@@ -169,7 +172,7 @@ extension WmmApiExtension on WmApi {
       final streamed = await request.send().timeout(const Duration(seconds: 25));
       final response = await http.Response.fromStream(streamed);
       final payload = await _decode(response);
-      completeWriteRequest(path, payloadKey);
+      await completeWriteRequest(path, payloadKey);
       return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
     } on ApiException {
       rethrow;
@@ -457,7 +460,10 @@ class _ToolScreenState extends State<ToolScreen> {
     final note = await askNote(label);
     if (note == null) return;
     await runAction(
-      () => widget.api.setToolStatus(widget.toolId, status, note),
+      () => widget.api.setToolStatus(
+        widget.toolId, status, note,
+        baseRevision: (tool['wmm_revision'] ?? '').toString(),
+      ),
       'Status narzędzia zapisany w WM.',
     );
     await refreshStatusContext();
@@ -571,6 +577,22 @@ class _ToolScreenState extends State<ToolScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
       );
+    } on ApiException catch (e) {
+      if (e.code == 'WMM_REVISION_CONFLICT') {
+        await refreshStatusContext();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Dane narzędzia zmienił inny użytkownik. Odświeżono kartę — sprawdź status i wybierz ponownie.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), behavior: SnackBarBehavior.floating),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
