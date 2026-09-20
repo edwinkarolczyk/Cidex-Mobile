@@ -197,7 +197,11 @@ class CidexApi {
       final payload = await _decode(response);
       await completeWriteRequest(path, encodedBody);
       return payload;
-    } on ApiException {
+    } on ApiException catch (error) {
+      if (error.code == 'WMM_REVISION_CONFLICT') {
+        // API nie wykonało zapisu; następna świadoma próba ma nową rewizję i ID.
+        await completeWriteRequest(path, encodedBody);
+      }
       rethrow;
     } catch (error) {
       // Przy timeout / zerwaniu Wi-Fi zachowaj request-id. Ponowienie tej samej
