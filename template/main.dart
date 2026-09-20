@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -44,8 +46,10 @@ class ApiConfig {
 }
 
 class ApiException implements Exception {
-  ApiException(this.message);
+  ApiException(this.message, {this.code = '', this.statusCode = 0});
   final String message;
+  final String code;
+  final int statusCode;
 
   @override
   String toString() => message;
@@ -59,9 +63,8 @@ class CidexApi {
   final String baseUrl;
   final String token;
 
-  static final Map<String, String> _pendingWriteIds = <String, String>{};
-  static final Map<String, DateTime> _pendingWriteCreated = <String, DateTime>{};
-  static const Duration _pendingWriteTtl = Duration(minutes: 10);
+  static const String _pendingWriteStorageKey = 'wmm_pending_requests_v2';
+  static Future<void> _pendingWriteGate = Future<void>.value();
 
   Map<String, String> get headers => {
         'Accept': 'application/json',
@@ -71,37 +74,65 @@ class CidexApi {
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
 
   String _writeFingerprint(String path, String payloadKey) =>
-      '$baseUrl|${token.hashCode}|$path|$payloadKey';
+      '$baseUrl|$path|$payloadKey';
 
-  void _prunePendingWrites() {
-    final now = DateTime.now();
-    final stale = _pendingWriteCreated.entries
-        .where((entry) => now.difference(entry.value) > _pendingWriteTtl)
-        .map((entry) => entry.key)
-        .toList();
-    for (final key in stale) {
-      _pendingWriteCreated.remove(key);
-      _pendingWriteIds.remove(key);
+  Future<T> _withPendingWriteLock<T>(Future<T> Function() body) async {
+    final previous = _pendingWriteGate;
+    final released = Completer<void>();
+    _pendingWriteGate = released.future;
+    await previous;
+    try {
+      return await body();
+    } finally {
+      released.complete();
     }
   }
 
-  String beginWriteRequest(String path, String payloadKey) {
-    _prunePendingWrites();
-    final fingerprint = _writeFingerprint(path, payloadKey);
-    final existing = _pendingWriteIds[fingerprint];
-    if (existing != null && existing.isNotEmpty) return existing;
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    final suffix = fingerprint.hashCode.toUnsigned(32).toRadixString(16);
-    final requestId = 'wmm-$stamp-$suffix';
-    _pendingWriteIds[fingerprint] = requestId;
-    _pendingWriteCreated[fingerprint] = DateTime.now();
-    return requestId;
+  Future<Map<String, String>> _readPendingWrites(SharedPreferences prefs) async {
+    final raw = prefs.getString(_pendingWriteStorageKey) ?? '';
+    if (raw.isEmpty) return <String, String>{};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.map(
+          (key, value) => MapEntry(key.toString(), value.toString()),
+        );
+      }
+    } catch (_) {
+      // Uszkodzonej kolejki nie wolno nadpisywać: grozi to powtórzeniem POST.
+    }
+    throw ApiException('Nie można odczytać zapisanych operacji WMM. Nie wysłano danych.');
   }
 
-  void completeWriteRequest(String path, String payloadKey) {
-    final fingerprint = _writeFingerprint(path, payloadKey);
-    _pendingWriteIds.remove(fingerprint);
-    _pendingWriteCreated.remove(fingerprint);
+  Future<String> beginWriteRequest(String path, String payloadKey) {
+    return _withPendingWriteLock(() async {
+      final prefs = await SharedPreferences.getInstance();
+      final pending = await _readPendingWrites(prefs);
+      final fingerprint = _writeFingerprint(path, payloadKey);
+      final existing = pending[fingerprint];
+      if (existing != null && existing.isNotEmpty) return existing;
+
+      final random = Random.secure();
+      final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+      final nonce = bytes.map((value) => value.toRadixString(16).padLeft(2, '0')).join();
+      final requestId = 'wmm-${DateTime.now().microsecondsSinceEpoch}-$nonce';
+      pending[fingerprint] = requestId;
+      if (!await prefs.setString(_pendingWriteStorageKey, jsonEncode(pending))) {
+        throw ApiException('Nie udało się zabezpieczyć operacji na telefonie. Zapis wstrzymany.');
+      }
+      return requestId;
+    });
+  }
+
+  Future<void> completeWriteRequest(String path, String payloadKey) {
+    return _withPendingWriteLock(() async {
+      final prefs = await SharedPreferences.getInstance();
+      final pending = await _readPendingWrites(prefs);
+      pending.remove(_writeFingerprint(path, payloadKey));
+      if (!await prefs.setString(_pendingWriteStorageKey, jsonEncode(pending))) {
+        throw ApiException('Zapis w WM potwierdzony, ale nie wyczyszczono kolejki telefonu.');
+      }
+    });
   }
 
   Map<String, String> writeHeaders(String requestId) => {
@@ -123,6 +154,8 @@ class CidexApi {
       throw ApiException(
         payload['error']?.toString() ??
             'CIDEX API: błąd HTTP ${response.statusCode}.',
+        code: (payload['code'] ?? '').toString(),
+        statusCode: response.statusCode,
       );
     }
     if (payload['ok'] == false) {
@@ -149,7 +182,7 @@ class CidexApi {
     Map<String, dynamic> body,
   ) async {
     final encodedBody = jsonEncode(body);
-    final requestId = beginWriteRequest(path, encodedBody);
+    final requestId = await beginWriteRequest(path, encodedBody);
     try {
       final response = await http
           .post(
@@ -162,7 +195,7 @@ class CidexApi {
           )
           .timeout(const Duration(seconds: 10));
       final payload = await _decode(response);
-      completeWriteRequest(path, encodedBody);
+      await completeWriteRequest(path, encodedBody);
       return payload;
     } on ApiException {
       rethrow;
@@ -210,11 +243,12 @@ class CidexApi {
   Future<Map<String, dynamic>> setStatus(
     String id,
     String status,
-    String note,
-  ) async {
+    String note, {
+    String baseRevision = '',
+  }) async {
     final payload = await postJson(
       '/api/v1/machines/${Uri.encodeComponent(id)}/status',
-      {'status': status, 'note': note},
+      {'status': status, 'note': note, if (baseRevision.isNotEmpty) 'base_revision': baseRevision},
     );
     return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
   }
@@ -231,7 +265,7 @@ class CidexApi {
     final path = '/api/v1/machines/${Uri.encodeComponent(id)}/photos';
     final fileLength = await file.length();
     final payloadKey = 'photo:${file.path}:$fileLength';
-    final requestId = beginWriteRequest(path, payloadKey);
+    final requestId = await beginWriteRequest(path, payloadKey);
     try {
       final request = http.MultipartRequest('POST', _uri(path));
       request.headers.addAll(writeHeaders(requestId));
@@ -239,7 +273,7 @@ class CidexApi {
       final streamed = await request.send().timeout(const Duration(seconds: 25));
       final response = await http.Response.fromStream(streamed);
       final payload = await _decode(response);
-      completeWriteRequest(path, payloadKey);
+      await completeWriteRequest(path, payloadKey);
       return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
     } on ApiException {
       rethrow;
@@ -1316,7 +1350,10 @@ class _MachineScreenState extends State<MachineScreen> {
       required: requiresNote,
     );
     if (note == null) return;
-    await runAction(() => widget.api.setStatus(widget.machineId, status, note), 'Status zapisany w WM.');
+    await runAction(() => widget.api.setStatus(
+      widget.machineId, status, note,
+      baseRevision: (machine['wmm_revision'] ?? '').toString(),
+    ), 'Status zapisany w WM.');
   }
 
   Future<void> addNote() async {
@@ -1371,6 +1408,13 @@ class _MachineScreenState extends State<MachineScreen> {
       if (!mounted) return;
       setState(() => machine = item);
       snack(success);
+    } on ApiException catch (e) {
+      if (e.code == 'WMM_REVISION_CONFLICT') {
+        await load();
+        if (mounted) snack('Karta została zmieniona w WM. Odświeżono dane — sprawdź i wybierz status ponownie.');
+      } else {
+        if (mounted) snack(e.toString());
+      }
     } catch (e) {
       if (mounted) snack(e.toString());
     } finally {
