@@ -163,11 +163,15 @@ extension WmmApiExtension on WmApi {
   Future<Map<String, dynamic>> uploadToolPhoto(String id, XFile file) async {
     final path = '/api/v1/tools/${Uri.encodeComponent(id)}/photos';
     final fileLength = await file.length();
-    final payloadKey = 'photo:${file.path}:$fileLength';
+    final photoSha256 = (await sha256.bind(file.openRead()).first).toString();
+    final payloadKey = 'photo:$photoSha256:$fileLength';
     final requestId = await beginWriteRequest(path, payloadKey);
     try {
       final request = http.MultipartRequest('POST', _uri(path));
-      request.headers.addAll(writeHeaders(requestId));
+      request.headers.addAll({
+        ...writeHeaders(requestId),
+        'X-WMM-Photo-SHA256': photoSha256,
+      });
       request.files.add(await http.MultipartFile.fromPath('photo', file.path));
       final streamed = await request.send().timeout(const Duration(seconds: 25));
       final response = await http.Response.fromStream(streamed);
