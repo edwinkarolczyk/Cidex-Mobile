@@ -164,7 +164,7 @@ extension WmmApiExtension on WmApi {
     final path = '/api/v1/tools/${Uri.encodeComponent(id)}/photos';
     final fileLength = await file.length();
     final photoSha256 = (await sha256.bind(file.openRead()).first).toString();
-    final payloadKey = 'photo:$photoSha256:$fileLength';
+    final payloadKey = wmmPhotoPayloadKey(photoSha256, fileLength);
     final requestId = await beginWriteRequest(path, payloadKey);
     try {
       final request = http.MultipartRequest('POST', _uri(path));
