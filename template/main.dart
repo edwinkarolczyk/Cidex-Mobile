@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -274,12 +275,17 @@ class CidexApi {
 
   Future<Map<String, dynamic>> uploadPhoto(String id, XFile file) async {
     final path = '/api/v1/machines/${Uri.encodeComponent(id)}/photos';
+    // Fingerprint treści nie zależy od tymczasowej ścieżki Androida.
     final fileLength = await file.length();
-    final payloadKey = 'photo:${file.path}:$fileLength';
+    final photoSha256 = (await sha256.bind(file.openRead()).first).toString();
+    final payloadKey = 'photo:$photoSha256:$fileLength';
     final requestId = await beginWriteRequest(path, payloadKey);
     try {
       final request = http.MultipartRequest('POST', _uri(path));
-      request.headers.addAll(writeHeaders(requestId));
+      request.headers.addAll({
+        ...writeHeaders(requestId),
+        'X-WMM-Photo-SHA256': photoSha256,
+      });
       request.files.add(await http.MultipartFile.fromPath('photo', file.path));
       final streamed = await request.send().timeout(const Duration(seconds: 25));
       final response = await http.Response.fromStream(streamed);
