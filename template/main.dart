@@ -1435,7 +1435,7 @@ class _MachineScreenState extends State<MachineScreen> {
     } on ApiException catch (e) {
       if (e.code == 'WMM_REVISION_CONFLICT') {
         await load();
-        if (mounted) snack('Karta została zmieniona w WM. Odświeżono dane — sprawdź i wybierz status ponownie.');
+        if (mounted) snack('Dane maszyny zmienił inny użytkownik. Odświeżono kartę — sprawdź dane i wykonaj operację ponownie.');
       } else {
         if (mounted) snack(e.toString());
       }
