@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:cidex_mobile/main.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -191,6 +194,33 @@ void main() {
     expect(wmmToolStatusIsCurrent(const {'status': 'Dostępne'}, option), isTrue);
     expect(wmmToolStatusIsCurrent(const {'status_label': 'Dostępne'}, option), isTrue);
     expect(wmmToolStatusIsCurrent(const {'status': 'Do naprawy'}, option), isFalse);
+  });
+
+  test('WMM 0.5.30 dodaje rewizję do uwagi maszyny', () {
+    expect(
+      wmmMachineNotePayload('Wyciek oleju', 'rev-123'),
+      {'note': 'Wyciek oleju', 'base_revision': 'rev-123'},
+    );
+  });
+
+  test('WMM 0.5.30 photo fingerprint depends on bytes, not picker path', () async {
+    SharedPreferences.setMockInitialValues({});
+    final digest = sha256.convert(utf8.encode('identyczne zdjęcie')).toString();
+    final payloadKey = wmmPhotoPayloadKey(digest, 1234);
+
+    expect(payloadKey, 'photo:$digest:1234');
+    expect(payloadKey, isNot(contains('/storage/emulated/0/')));
+    const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
+    final first = await WmApi(config).beginWriteRequest(
+      '/api/v1/tools/001/photos', payloadKey,
+    );
+    final retry = await WmApi(config).beginWriteRequest(
+      '/api/v1/tools/001/photos', wmmPhotoPayloadKey(digest, 1234),
+    );
+    expect(retry, first);
+    await WmApi(config).completeWriteRequest(
+      '/api/v1/tools/001/photos', payloadKey,
+    );
   });
 
 }
