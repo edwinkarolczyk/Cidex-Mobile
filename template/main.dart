@@ -56,6 +56,14 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+Map<String, dynamic> wmmMachineNotePayload(String note, String baseRevision) => {
+  'note': note,
+  'base_revision': baseRevision,
+};
+
+String wmmPhotoPayloadKey(String photoSha256, int fileLength) =>
+    'photo:$photoSha256:$fileLength';
+
 class CidexApi {
   CidexApi(ApiConfig config)
       : baseUrl = config.baseUrl.trim().replaceFirst(RegExp(r'/+$'), ''),
@@ -268,7 +276,7 @@ class CidexApi {
     }
     final payload = await postJson(
       '/api/v1/machines/${Uri.encodeComponent(id)}/note',
-      {'note': note, 'base_revision': baseRevision},
+      wmmMachineNotePayload(note, baseRevision),
     );
     return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
   }
@@ -278,7 +286,7 @@ class CidexApi {
     // Fingerprint treści nie zależy od tymczasowej ścieżki Androida.
     final fileLength = await file.length();
     final photoSha256 = (await sha256.bind(file.openRead()).first).toString();
-    final payloadKey = 'photo:$photoSha256:$fileLength';
+    final payloadKey = wmmPhotoPayloadKey(photoSha256, fileLength);
     final requestId = await beginWriteRequest(path, payloadKey);
     try {
       final request = http.MultipartRequest('POST', _uri(path));
