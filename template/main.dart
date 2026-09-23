@@ -257,10 +257,17 @@ class CidexApi {
     return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
   }
 
-  Future<Map<String, dynamic>> addNote(String id, String note) async {
+  Future<Map<String, dynamic>> addNote(
+    String id,
+    String note, {
+    required String baseRevision,
+  }) async {
+    if (baseRevision.isEmpty) {
+      throw ApiException('Odśwież kartę maszyny przed dodaniem uwagi.');
+    }
     final payload = await postJson(
       '/api/v1/machines/${Uri.encodeComponent(id)}/note',
-      {'note': note},
+      {'note': note, 'base_revision': baseRevision},
     );
     return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
   }
@@ -1363,7 +1370,14 @@ class _MachineScreenState extends State<MachineScreen> {
   Future<void> addNote() async {
     final note = await askText('Dodaj uwagę', 'Wpisz uwagę do maszyny...');
     if (note == null) return;
-    await runAction(() => widget.api.addNote(widget.machineId, note), 'Uwaga dodana jako Cidex.');
+    await runAction(
+      () => widget.api.addNote(
+        widget.machineId,
+        note,
+        baseRevision: (machine['wmm_revision'] ?? '').toString(),
+      ),
+      'Uwaga dodana w WM.',
+    );
   }
 
   Future<void> choosePhoto() async {
