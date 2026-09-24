@@ -223,4 +223,41 @@ void main() {
     );
   });
 
+
+  test('WMM 0.5.31: zamknięte dyspozycje zawsze na końcu', () {
+    final items = <Map<String, dynamic>>[
+      {'id': 'C', 'status': 'zamknieta', 'priorytet': 'krytyczny'},
+      {'id': 'X', 'status': 'nieznany', 'priorytet': 'niski'},
+      {'id': 'P', 'status': 'w_toku', 'priorytet': 'wysoki'},
+      {'id': 'N', 'status': 'nowa', 'priorytet': 'normalny'},
+    ];
+    final visible = wmmVisibleDispositions(items, '', 'all');
+    expect(visible.map((item) => item['id']).toList(), ['N', 'P', 'X', 'C']);
+    expect(items.first['id'], 'C'); // bez modyfikowania danych źródłowych
+  });
+
+  test('WMM 0.5.31: filtr działa razem z wyszukiwaniem', () {
+    final items = <Map<String, dynamic>>[
+      {'id': 'N', 'status': 'nowa', 'tytul': 'Przegląd'},
+      {'id': 'P', 'status': 'w_toku', 'tytul': 'Naprawa'},
+      {'id': 'C', 'status': 'zamknieta', 'tytul': 'Przegląd'},
+    ];
+    expect(wmmVisibleDispositions(items, '', 'active').length, 2);
+    expect(wmmVisibleDispositions(items, '', 'zamknieta').single['id'], 'C');
+    expect(wmmVisibleDispositions(items, 'Przegląd', 'nowa').single['id'], 'N');
+    expect(wmmVisibleDispositions(items, '', 'all').length, 3);
+    expect(wmmDispositionFilterValue('nieznany'), 'all');
+  });
+
+  test('WMM 0.5.31: filtr jest zachowany po ponownym otwarciu', () async {
+    SharedPreferences.setMockInitialValues({});
+    final first = await SharedPreferences.getInstance();
+    await first.setString(wmmDispositionFilterKey, 'zamknieta');
+    final reopened = await SharedPreferences.getInstance();
+    expect(
+      wmmDispositionFilterValue(reopened.getString(wmmDispositionFilterKey)),
+      'zamknieta',
+    );
+  });
+
 }
