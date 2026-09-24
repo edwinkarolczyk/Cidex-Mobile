@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 
 
-APP_VERSION = "0.5.30"
+APP_VERSION = "0.5.31"
 
 
 def replace_required(source: str, old: str, new: str, label: str) -> str:
@@ -129,7 +129,7 @@ def main() -> None:
         text = text.replace("WMM 0.5.23", f"WMM {APP_VERSION}")
         closing = text.rfind("}\n")
         if closing >= 0:
-            extra = """\n  test('WMM 0.5.30 pozwala oznaczyć widoczny przegląd jako wykonany', () {\n    expect(kWmmCurrentVersion, '0.5.30');\n  });\n"""
+            extra = """\n  test('WMM 0.5.31 pozwala oznaczyć widoczny przegląd jako wykonany', () {\n    expect(kWmmCurrentVersion, '0.5.31');\n  });\n"""
             text = text[:closing] + extra + text[closing:]
         test.write_text(text, encoding="utf-8")
 
