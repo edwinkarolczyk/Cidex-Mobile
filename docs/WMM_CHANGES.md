@@ -1,5 +1,12 @@
 # WMM — zmiany bieżące
 
+## 2026-09-24 — WMM 0.5.31
+
+- Zamknięte Dyspozycje wyświetlają się na końcu listy, także za rekordami o nierozpoznanym statusie.
+- Filtr statusów: Wszystkie, Aktywne, Nowe, W toku, Wstrzymane i Zakończone.
+- Ostatnio wybrany filtr jest przechowywany lokalnie w telefonie; pozostaje po odświeżeniu i ponownym uruchomieniu WMM.
+- Bez zmian w statusach Dyspozycji w WM, danych produkcyjnych i API.
+
 ## 2026-09-10
 
 - Dodano miniaturki zdjęć na listach Maszyn i Narzędzi.
