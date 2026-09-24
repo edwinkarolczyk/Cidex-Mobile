@@ -140,9 +140,9 @@ int _wmmDispositionStatusRank(dynamic value) {
     case 'wstrzymana':
       return 2;
     case 'zamknieta':
-      return 3;
-    default:
       return 4;
+    default:
+      return 3;
   }
 }
 
@@ -277,6 +277,68 @@ class WmmDispositionInfoRow extends StatelessWidget {
   }
 }
 
+
+const String wmmDispositionFilterKey = 'wmm_dispositions_status_filter_v1';
+
+const Map<String, String> wmmDispositionFilters = {
+  'all': 'Wszystkie',
+  'active': 'Aktywne',
+  'nowa': 'Nowe',
+  'w_toku': 'W toku',
+  'wstrzymana': 'Wstrzymane',
+  'zamknieta': 'Zakończone',
+};
+
+String wmmDispositionFilterValue(String? value) =>
+    wmmDispositionFilters.containsKey(value) ? value! : 'all';
+
+bool wmmDispositionMatchesFilter(Map<String, dynamic> item, String filter) {
+  final status = (item['status'] ?? '').toString().trim().toLowerCase();
+  switch (wmmDispositionFilterValue(filter)) {
+    case 'all':
+      return true;
+    case 'active':
+      return status != 'zamknieta';
+    default:
+      return status == filter;
+  }
+}
+
+List<Map<String, dynamic>> wmmVisibleDispositions(
+  List<Map<String, dynamic>> items,
+  String query,
+  String filter,
+) {
+  final q = query.trim().toLowerCase();
+  final rows = items.where((item) {
+    if (!wmmDispositionMatchesFilter(item, filter)) return false;
+    if (q.isEmpty) return true;
+    return [
+      'id', 'tytul', 'opis', 'typ_dyspozycji', 'status',
+      'priorytet', 'termin', 'przypisane_do', 'wykonuje', 'obiekt_id',
+    ].map((key) => (item[key] ?? '').toString().toLowerCase())
+        .any((value) => value.contains(q));
+  }).map(Map<String, dynamic>.from).toList();
+
+  rows.sort((a, b) {
+    final status = _wmmDispositionStatusRank(a['status'])
+        .compareTo(_wmmDispositionStatusRank(b['status']));
+    if (status != 0) return status;
+    final priority = _wmmDispositionPriorityRank(a['priorytet'])
+        .compareTo(_wmmDispositionPriorityRank(b['priorytet']));
+    if (priority != 0) return priority;
+    final at = (a['termin'] ?? '').toString().trim();
+    final bt = (b['termin'] ?? '').toString().trim();
+    if (at.isEmpty && bt.isNotEmpty) return 1;
+    if (at.isNotEmpty && bt.isEmpty) return -1;
+    final due = at.compareTo(bt);
+    if (due != 0) return due;
+    return (a['tytul'] ?? '').toString().toLowerCase()
+        .compareTo((b['tytul'] ?? '').toString().toLowerCase());
+  });
+  return rows;
+}
+
 class DispositionsScreen extends StatefulWidget {
   const DispositionsScreen({super.key, required this.api});
 
@@ -291,16 +353,42 @@ class _DispositionsScreenState extends State<DispositionsScreen> {
   List<Map<String, dynamic>> items = [];
   bool busy = true;
   String error = '';
+  String statusFilter = 'all';
+  bool filterChangedByUser = false;
 
   @override
   void initState() {
     super.initState();
     search.addListener(_onSearchChanged);
+    _restoreStatusFilter();
     load();
   }
 
   void _onSearchChanged() {
     if (mounted) setState(() {});
+  }
+
+  Future<void> _restoreStatusFilter() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted || filterChangedByUser) return;
+      setState(() => statusFilter =
+          wmmDispositionFilterValue(prefs.getString(wmmDispositionFilterKey)));
+    } catch (_) {
+      // Keep the default filter if local preference storage is unavailable.
+    }
+  }
+
+  Future<void> _setStatusFilter(String value) async {
+    filterChangedByUser = true;
+    final next = wmmDispositionFilterValue(value);
+    setState(() => statusFilter = next);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(wmmDispositionFilterKey, next);
+    } catch (_) {
+      // Filtering works for the current session even when persistence fails.
+    }
   }
 
   @override
@@ -328,39 +416,8 @@ class _DispositionsScreenState extends State<DispositionsScreen> {
     }
   }
 
-  List<Map<String, dynamic>> get visible {
-    final q = search.text.trim().toLowerCase();
-    final rows = items.where((item) {
-      if (q.isEmpty) return true;
-      return [
-        'id',
-        'tytul',
-        'opis',
-        'typ_dyspozycji',
-        'status',
-        'priorytet',
-        'termin',
-        'przypisane_do',
-        'wykonuje',
-        'obiekt_id',
-      ].map((key) => (item[key] ?? '').toString().toLowerCase()).any((value) => value.contains(q));
-    }).map(Map<String, dynamic>.from).toList();
-
-    rows.sort((a, b) {
-      final status = _wmmDispositionStatusRank(a['status']).compareTo(_wmmDispositionStatusRank(b['status']));
-      if (status != 0) return status;
-      final priority = _wmmDispositionPriorityRank(a['priorytet']).compareTo(_wmmDispositionPriorityRank(b['priorytet']));
-      if (priority != 0) return priority;
-      final at = (a['termin'] ?? '').toString().trim();
-      final bt = (b['termin'] ?? '').toString().trim();
-      if (at.isEmpty && bt.isNotEmpty) return 1;
-      if (at.isNotEmpty && bt.isEmpty) return -1;
-      final due = at.compareTo(bt);
-      if (due != 0) return due;
-      return (a['tytul'] ?? '').toString().toLowerCase().compareTo((b['tytul'] ?? '').toString().toLowerCase());
-    });
-    return rows;
-  }
+  List<Map<String, dynamic>> get visible =>
+      wmmVisibleDispositions(items, search.text, statusFilter);
 
   @override
   Widget build(BuildContext context) {
@@ -384,6 +441,29 @@ class _DispositionsScreenState extends State<DispositionsScreen> {
                   decoration: const InputDecoration(
                     hintText: 'Szukaj dyspozycji, obiektu, osoby...',
                     prefixIcon: Icon(Icons.search_rounded),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Filtr statusu',
+                    prefixIcon: Icon(Icons.filter_list_rounded),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: statusFilter,
+                      isExpanded: true,
+                      dropdownColor: kPanel,
+                      items: wmmDispositionFilters.entries.map((entry) =>
+                        DropdownMenuItem<String>(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        ),
+                      ).toList(),
+                      onChanged: (value) {
+                        if (value != null) _setStatusFilter(value);
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
