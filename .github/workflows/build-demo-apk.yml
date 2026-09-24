@@ -1,4 +1,4 @@
-# WMM 0.5.30
+# WMM 0.5.31
 name: Build WMM APK
 
 on:
@@ -94,7 +94,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.30 --build-number 80
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.31 --build-number 81
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
@@ -108,9 +108,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.30"
-          TITLE="WMM 0.5.30"
-          NOTES="WMM 0.5.30: poprawka Dodaj uwage, ochrona przed nadpisaniem, uzgadnianie WMM_PENDING po restarcie oraz SHA-256 zdjec."
+          TAG="v0.5.31"
+          TITLE="WMM 0.5.31"
+          NOTES="WMM 0.5.31: zamkniete dyspozycje na samym dole oraz filtr statusu zapamietywany po ponownym uruchomieniu aplikacji."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
