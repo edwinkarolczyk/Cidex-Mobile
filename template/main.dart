@@ -903,6 +903,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
   List<Map<String, dynamic>> items = [];
   bool busy = true;
   String error = '';
+  final Set<String> collapsedSemis = <String>{};
 
   @override
   void initState() {
@@ -1283,9 +1284,10 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
     );
   }
 
-  Widget semiCard(Map<String, dynamic> semi) {
+  Widget semiCard(Map<String, dynamic> semi, {required bool expanded}) {
     final operations = wmmPlanistaOperations(semi);
     final toMake = double.tryParse((semi['do_wykonania'] ?? 0).toString()) ?? 0;
+    final remaining = double.tryParse((semi['pozostalo'] ?? 0).toString()) ?? 0;
     final material = Map<String, dynamic>.from(semi['surowiec'] as Map? ?? const {});
     final rawCode = (material['kod'] ?? '').toString();
     final rawName = (material['nazwa'] ?? '').toString();
@@ -1295,20 +1297,12 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
     final cutMm = double.tryParse((material['do_odciecia_na_szt_mm'] ?? 0).toString()) ?? 0;
     final barMm = double.tryParse((material['dlugosc_sztangi_mm'] ?? 0).toString()) ?? 0;
     final barsNeeded = material['sztangi_potrzebne'];
-    return RoundedCard(
-      child: Column(
+    final code = (semi['kod'] ?? semi['nazwa'] ?? '').toString();
+
+    Widget details() {
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${semi['nazwa'] ?? semi['kod'] ?? 'Półprodukt'}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            '${semi['kod'] ?? '—'}',
-            style: const TextStyle(color: kMuted, fontSize: 12),
-          ),
-          const SizedBox(height: 10),
           Text(
             'Potrzeba: ${fmtNumber(semi['potrzeba'])}  •  '
             'Z magazynu: ${fmtNumber(semi['z_magazynu'])}  •  '
@@ -1333,10 +1327,7 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Dane do cięcia',
-                    style: TextStyle(fontWeight: FontWeight.w900),
-                  ),
+                  const Text('Dane do cięcia', style: TextStyle(fontWeight: FontWeight.w900)),
                   const SizedBox(height: 6),
                   Text('Surowiec: ${rawName.isNotEmpty ? rawName : rawCode}${rawCode.isNotEmpty && rawName.isNotEmpty ? ' [$rawCode]' : ''}'),
                   if (rawPerPiece > 0)
@@ -1345,20 +1336,15 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
                           ? 'Długość 1 sztuki: ${wmmMmWithMeters(rawPerPiece)}'
                           : 'Ilość na 1 sztukę: ${fmtNumber(rawPerPiece)} $rawUnit',
                     ),
-                  if (bladeMm > 0)
-                    Text('Grubość piły/taśmy: ${fmtNumber(bladeMm)} mm'),
+                  if (bladeMm > 0) Text('Grubość piły/taśmy: ${fmtNumber(bladeMm)} mm'),
                   if (cutMm > 0)
                     Text(
-                      'Do odcięcia: ${fmtNumber(rawPerPiece)} mm + '
-                      '${fmtNumber(bladeMm)} mm = ${wmmMmWithMeters(cutMm)} / szt.',
+                      'Do odcięcia: ${fmtNumber(rawPerPiece)} mm + ${fmtNumber(bladeMm)} mm = ${wmmMmWithMeters(cutMm)} / szt.',
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
-                  if (barMm > 0)
-                    Text('Standardowa sztanga: ${wmmMmWithMeters(barMm)}'),
+                  if (barMm > 0) Text('Standardowa sztanga: ${wmmMmWithMeters(barMm)}'),
                   if (barsNeeded != null && barMm > 0)
-                    Text(
-                      'Potrzeba sztang dla tego surowca w zleceniu: ${fmtNumber(barsNeeded)}',
-                    ),
+                    Text('Potrzeba sztang dla tego surowca w zleceniu: ${fmtNumber(barsNeeded)}'),
                 ],
               ),
             ),
@@ -1375,10 +1361,7 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
               style: TextStyle(color: kMuted),
             )
           else ...[
-            const Text(
-              'Operacje',
-              style: TextStyle(fontWeight: FontWeight.w900),
-            ),
+            const Text('Operacje', style: TextStyle(fontWeight: FontWeight.w900)),
             const SizedBox(height: 5),
             ...operations.map((operation) {
               final done = wmmPlanistaOperationCompleted(operation);
@@ -1418,6 +1401,71 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
                 ),
               );
             }),
+          ],
+        ],
+      );
+    }
+
+    return RoundedCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              if (code.isEmpty) return;
+              setState(() {
+                if (collapsedSemis.contains(code)) {
+                  collapsedSemis.remove(code);
+                } else {
+                  collapsedSemis.add(code);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${semi['nazwa'] ?? semi['kod'] ?? 'Półprodukt'}',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                        ),
+                        const SizedBox(height: 3),
+                        Text('${semi['kod'] ?? '—'}', style: const TextStyle(color: kMuted, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    color: kMuted,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Wykonano: ${fmtNumber(semi['wykonano'])}  •  Pozostało: ${fmtNumber(semi['pozostalo'])}',
+            style: TextStyle(
+              color: remaining <= 0 ? kGreen : kMuted,
+              fontWeight: remaining <= 0 ? FontWeight.w800 : FontWeight.normal,
+            ),
+          ),
+          if (!expanded)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                remaining <= 0 ? '✓ Wykonane — stuknij nagłówek, aby rozwinąć' : 'Stuknij nagłówek, aby rozwinąć',
+                style: TextStyle(color: remaining <= 0 ? kGreen : kMuted, fontWeight: FontWeight.w700),
+              ),
+            ),
+          if (expanded) ...[
+            const SizedBox(height: 8),
+            details(),
           ],
         ],
       ),
@@ -1503,13 +1551,57 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
                                 style: TextStyle(color: kMuted),
                               ),
                             )
-                          else
-                            ...semis.expand(
-                              (semi) => [
-                                semiCard(semi),
-                                const SizedBox(height: 10),
-                              ],
-                            ),
+                          else ...[
+                            ...(() {
+                              final active = <Map<String, dynamic>>[];
+                              final done = <Map<String, dynamic>>[];
+                              for (final semi in semis) {
+                                final remaining = double.tryParse((semi['pozostalo'] ?? 0).toString()) ?? 0;
+                                (remaining <= 0 ? done : active).add(semi);
+                              }
+                              return [
+                                ...active.expand(
+                                  (semi) => [
+                                    semiCard(
+                                      semi,
+                                      expanded: !collapsedSemis.contains(
+                                        (semi['kod'] ?? semi['nazwa'] ?? '').toString(),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                  ],
+                                ),
+                                if (done.isNotEmpty) ...[
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+                                    child: Row(
+                                      children: [
+                                        const Expanded(child: Divider(color: kGreen)),
+                                        const SizedBox(width: 10),
+                                        const Text(
+                                          '✓ WYKONANE',
+                                          style: TextStyle(color: kGreen, fontWeight: FontWeight.w900),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Expanded(child: Divider(color: kGreen)),
+                                      ],
+                                    ),
+                                  ),
+                                  ...done.expand(
+                                    (semi) => [
+                                      semiCard(
+                                        semi,
+                                        expanded: !collapsedSemis.contains(
+                                          (semi['kod'] ?? semi['nazwa'] ?? '').toString(),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                    ],
+                                  ),
+                                ],
+                              ];
+                            })(),
+                          ],
                         ],
                       ),
           ),
