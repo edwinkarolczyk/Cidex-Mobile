@@ -1,5 +1,12 @@
 # WMM — zmiany bieżące
 
+## 2026-09-25 — WMM 0.5.33
+
+- Planista: szczegół zlecenia ma przycisk **Historia** z wpisami czasu, użytkownika i wykonanej zmiany.
+- Karty półproduktów pokazują dane technologiczne do cięcia: surowiec, długość 1 sztuki, grubość piły/taśmy i długość do odcięcia.
+- Dla surowców liniowych widoczna jest standardowa długość sztangi oraz liczba sztang potrzebna dla tego surowca w zleceniu.
+- Historia pozostaje historią konkretnego zlecenia w WM; WMM tylko ją wyświetla.
+
 ## 2026-09-25 — WMM 0.5.32
 
 - Planista: dotknięcie zlecenia otwiera szczegóły półproduktów i ich operacji technologicznych.
