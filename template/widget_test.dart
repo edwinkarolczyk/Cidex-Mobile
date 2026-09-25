@@ -261,6 +261,11 @@ void main() {
   });
 
 
+  test('WMM 0.5.33 formatuje długość w mm i metrach', () {
+    expect(wmmMmWithMeters(245), '245 mm (0.245 m)');
+    expect(wmmMmWithMeters(6000), '6000 mm (6 m)');
+  });
+
   test('WMM Planista pokazuje półprodukty i stan operacji', () {
     final order = <String, dynamic>{
       'id': '000015',
