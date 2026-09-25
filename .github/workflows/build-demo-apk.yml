@@ -1,4 +1,4 @@
-# WMM 0.5.33
+# WMM 0.5.34
 name: Build WMM APK
 
 on:
@@ -94,7 +94,7 @@ jobs:
         run: flutter test test/widget_test.dart
 
       - name: Build release APK ARM64
-        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.33 --build-number 83
+        run: flutter build apk --release --target-platform android-arm64 --build-name 0.5.34 --build-number 84
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk WMM.apk
@@ -108,9 +108,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.5.33"
-          TITLE="WMM 0.5.33"
-          NOTES="WMM 0.5.33: Planista pokazuje historię zlecenia oraz dane technologiczne do cięcia półproduktów: surowiec, długość sztuki, grubość piły/taśmy, długość do odcięcia i standardową sztangę."
+          TAG="v0.5.34"
+          TITLE="WMM 0.5.34"
+          NOTES="WMM 0.5.34: poprawiona wersja APK i prawidłowa identyfikacja wydania; zawiera funkcje Planisty z 0.5.33."
           for attempt in 1 2 3; do
             echo "Publikacja release - próba $attempt/3"
             if gh release view "$TAG" >/dev/null 2>&1; then
