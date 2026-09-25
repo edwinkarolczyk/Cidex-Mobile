@@ -1,5 +1,13 @@
 # WMM — zmiany bieżące
 
+## 2026-09-25 — WMM 0.5.32
+
+- Planista: dotknięcie zlecenia otwiera szczegóły półproduktów i ich operacji technologicznych.
+- Operacje można oznaczać jako wykonane bezpośrednio z telefonu po potwierdzeniu.
+- Zapis trafia do kanonicznego postępu Planisty WM; nie powstaje osobny stan lokalny WMM.
+- Kolejność operacji jest pilnowana przez WM, a wykonania nie można cofnąć z telefonu.
+- Ostatnia operacja aktualizuje wykonanie półproduktu zgodnie z regułami desktopowego WM.
+
 ## 2026-09-24 — WMM 0.5.31
 
 - Zamknięte Dyspozycje wyświetlają się na końcu listy, także za rekordami o nierozpoznanym statusie.
