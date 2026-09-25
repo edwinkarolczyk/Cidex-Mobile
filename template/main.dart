@@ -1044,6 +1044,12 @@ List<Map<String, dynamic>> wmmPlanistaOperations(Map<String, dynamic> semi) {
 bool wmmPlanistaOperationCompleted(Map<String, dynamic> operation) =>
     operation['wykonana'] == true;
 
+String wmmMmWithMeters(dynamic value) {
+  final mm = double.tryParse((value ?? 0).toString()) ?? 0;
+  final meters = mm / 1000.0;
+  return '${fmtNumber(mm)} mm (${fmtNumber(meters)} m)';
+}
+
 class PlanistaOrderScreen extends StatefulWidget {
   const PlanistaOrderScreen({
     super.key,
@@ -1188,9 +1194,107 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
     }
   }
 
+  Future<void> showHistory() async {
+    final raw = order['historia'];
+    final history = raw is List
+        ? raw.whereType<Map>().map(Map<String, dynamic>.from).toList().reversed.toList()
+        : <Map<String, dynamic>>[];
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: kPanel,
+      builder: (sheetContext) => SafeArea(
+        child: FractionallySizedBox(
+          heightFactor: 0.82,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Historia zlecenia',
+                        style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                Text(
+                  'Zlecenie $orderId',
+                  style: const TextStyle(color: kMuted),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: history.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Brak wpisów w historii zlecenia.',
+                            style: TextStyle(color: kMuted),
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: history.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          itemBuilder: (_, index) {
+                            final row = history[index];
+                            final whenRaw = (row['kiedy'] ?? '').toString();
+                            final when = whenRaw
+                                .replaceFirst('T', ' ')
+                                .replaceFirst('Z', '');
+                            final who = (row['kto'] ?? 'system').toString();
+                            final what = (row['co'] ?? '').toString();
+                            return Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: kPanel2,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: kBorder),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    what.isEmpty ? 'Zmiana zlecenia' : what,
+                                    style: const TextStyle(fontWeight: FontWeight.w800),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    '${when.isEmpty ? '—' : when}  •  $who',
+                                    style: const TextStyle(color: kMuted, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget semiCard(Map<String, dynamic> semi) {
     final operations = wmmPlanistaOperations(semi);
     final toMake = double.tryParse((semi['do_wykonania'] ?? 0).toString()) ?? 0;
+    final material = Map<String, dynamic>.from(semi['surowiec'] as Map? ?? const {});
+    final rawCode = (material['kod'] ?? '').toString();
+    final rawName = (material['nazwa'] ?? '').toString();
+    final rawUnit = (material['jednostka'] ?? '').toString();
+    final rawPerPiece = double.tryParse((material['ilosc_na_szt'] ?? 0).toString()) ?? 0;
+    final bladeMm = double.tryParse((material['grubosc_pily_tasmy_mm'] ?? 0).toString()) ?? 0;
+    final cutMm = double.tryParse((material['do_odciecia_na_szt_mm'] ?? 0).toString()) ?? 0;
+    final barMm = double.tryParse((material['dlugosc_sztangi_mm'] ?? 0).toString()) ?? 0;
+    final barsNeeded = material['sztangi_potrzebne'];
     return RoundedCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1216,6 +1320,49 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
             'Pozostało: ${fmtNumber(semi['pozostalo'])}',
             style: const TextStyle(color: kMuted),
           ),
+          if (rawCode.isNotEmpty || rawName.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: kPanel2,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: kBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Dane do cięcia',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 6),
+                  Text('Surowiec: ${rawName.isNotEmpty ? rawName : rawCode}${rawCode.isNotEmpty && rawName.isNotEmpty ? ' [$rawCode]' : ''}'),
+                  if (rawPerPiece > 0)
+                    Text(
+                      rawUnit.toLowerCase() == 'mm'
+                          ? 'Długość 1 sztuki: ${wmmMmWithMeters(rawPerPiece)}'
+                          : 'Ilość na 1 sztukę: ${fmtNumber(rawPerPiece)} $rawUnit',
+                    ),
+                  if (bladeMm > 0)
+                    Text('Grubość piły/taśmy: ${fmtNumber(bladeMm)} mm'),
+                  if (cutMm > 0)
+                    Text(
+                      'Do odcięcia: ${fmtNumber(rawPerPiece)} mm + '
+                      '${fmtNumber(bladeMm)} mm = ${wmmMmWithMeters(cutMm)} / szt.',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  if (barMm > 0)
+                    Text('Standardowa sztanga: ${wmmMmWithMeters(barMm)}'),
+                  if (barsNeeded != null && barMm > 0)
+                    Text(
+                      'Potrzeba sztang dla tego surowca w zleceniu: ${fmtNumber(barsNeeded)}',
+                    ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           if (toMake <= 0)
             const Text(
@@ -1284,7 +1431,18 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Zlecenie $orderId'),
-        actions: [IconButton(onPressed: actionBusy ? null : load, icon: const Icon(Icons.refresh_rounded))],
+        actions: [
+          IconButton(
+            tooltip: 'Historia zlecenia',
+            onPressed: busy ? null : showHistory,
+            icon: const Icon(Icons.history_rounded),
+          ),
+          IconButton(
+            tooltip: 'Odśwież',
+            onPressed: actionBusy ? null : load,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
       ),
       body: Stack(
         children: [
