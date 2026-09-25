@@ -903,7 +903,6 @@ class _PlannerScreenState extends State<PlannerScreen> {
   List<Map<String, dynamic>> items = [];
   bool busy = true;
   String error = '';
-  final Set<String> collapsedSemis = <String>{};
 
   @override
   void initState() {
@@ -1070,6 +1069,7 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
   bool busy = true;
   bool actionBusy = false;
   String error = '';
+  final Set<String> collapsedSemis = <String>{};
 
   @override
   void initState() {
