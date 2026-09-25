@@ -260,4 +260,48 @@ void main() {
     );
   });
 
+
+  test('WMM Planista pokazuje półprodukty i stan operacji', () {
+    final order = <String, dynamic>{
+      'id': '000015',
+      'wmm_polprodukty': [
+        {
+          'kod': 'POL-019',
+          'nazwa': 'Ośka blatu',
+          'do_wykonania': 50,
+          'operacje': [
+            {
+              'nazwa': 'Cięcie',
+              'wykonano': 50,
+              'do_wykonania': 50,
+              'wykonana': true,
+              'dostepna': false,
+            },
+            {
+              'nazwa': 'Wiercenie',
+              'wykonano': 0,
+              'do_wykonania': 50,
+              'wykonana': false,
+              'dostepna': true,
+            },
+          ],
+        },
+      ],
+    };
+
+    final semis = wmmPlanistaSemiproducts(order);
+    expect(semis, hasLength(1));
+    expect(semis.single['nazwa'], 'Ośka blatu');
+    final operations = wmmPlanistaOperations(semis.single);
+    expect(operations, hasLength(2));
+    expect(wmmPlanistaOperationCompleted(operations.first), isTrue);
+    expect(wmmPlanistaOperationCompleted(operations.last), isFalse);
+
+    const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
+    final api = WmApi(config);
+    final detail = PlanistaOrderScreen(api: api, initial: order);
+    expect(detail.api, same(api));
+    expect(detail.initial['id'], '000015');
+  });
+
 }
