@@ -961,50 +961,409 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     itemBuilder: (context, index) {
                       final order = items[index];
                       final status = (order['status'] ?? 'nowe').toString();
-                      return RoundedCard(
-                        padding: EdgeInsets.zero,
-                        child: Container(
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border(left: BorderSide(color: statusColor(status), width: 5)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => PlanistaOrderScreen(
+                                  api: widget.api,
+                                  initial: order,
+                                ),
+                              ),
+                            );
+                            if (mounted) await load();
+                          },
+                          child: RoundedCard(
+                            padding: EdgeInsets.zero,
+                            child: Container(
+                              padding: const EdgeInsets.all(15),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border(left: BorderSide(color: statusColor(status), width: 5)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Zlec. wew: ${order['zlec_wew'] ?? '—'}',
-                                      style: const TextStyle(fontWeight: FontWeight.w900),
-                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'Zlec. wew: ${order['zlec_wew'] ?? '—'}',
+                                          style: const TextStyle(fontWeight: FontWeight.w900),
+                                        ),
+                                      ),
+                                      StatusPill(text: status, color: statusColor(status)),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.chevron_right_rounded, color: kMuted),
+                                    ],
                                   ),
-                                  StatusPill(text: status, color: statusColor(status)),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '${order['produkt'] ?? 'Brak produktu'}',
+                                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 7),
+                                  Text(
+                                    'Warsztatowe: ${order['id'] ?? '—'}  •  Ilość: ${fmtNumber(order['ilosc'])}',
+                                    style: const TextStyle(color: Color(0xFFB8BEC6)),
+                                  ),
+                                  if ((order['termin'] ?? '').toString().isNotEmpty)
+                                    Text(
+                                      'Termin: ${order['termin']}',
+                                      style: const TextStyle(color: kMuted),
+                                    ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${order['produkt'] ?? 'Brak produktu'}',
-                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                              ),
-                              const SizedBox(height: 7),
-                              Text(
-                                'Warsztatowe: ${order['id'] ?? '—'}  •  Ilość: ${fmtNumber(order['ilosc'])}',
-                                style: const TextStyle(color: Color(0xFFB8BEC6)),
-                              ),
-                              if ((order['termin'] ?? '').toString().isNotEmpty)
-                                Text(
-                                  'Termin: ${order['termin']}',
-                                  style: const TextStyle(color: kMuted),
-                                ),
-                            ],
+                            ),
                           ),
                         ),
                       );
                     },
                   ),
                 ),
+    );
+  }
+}
+
+
+List<Map<String, dynamic>> wmmPlanistaSemiproducts(Map<String, dynamic> order) {
+  final raw = order['wmm_polprodukty'];
+  if (raw is! List) return const [];
+  return raw.whereType<Map>().map(Map<String, dynamic>.from).toList();
+}
+
+List<Map<String, dynamic>> wmmPlanistaOperations(Map<String, dynamic> semi) {
+  final raw = semi['operacje'];
+  if (raw is! List) return const [];
+  return raw.whereType<Map>().map(Map<String, dynamic>.from).toList();
+}
+
+bool wmmPlanistaOperationCompleted(Map<String, dynamic> operation) =>
+    operation['wykonana'] == true;
+
+class PlanistaOrderScreen extends StatefulWidget {
+  const PlanistaOrderScreen({
+    super.key,
+    required this.api,
+    required this.initial,
+  });
+
+  final CidexApi api;
+  final Map<String, dynamic> initial;
+
+  @override
+  State<PlanistaOrderScreen> createState() => _PlanistaOrderScreenState();
+}
+
+class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
+  late Map<String, dynamic> order;
+  bool busy = true;
+  bool actionBusy = false;
+  String error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    order = Map<String, dynamic>.from(widget.initial);
+    load();
+  }
+
+  String get orderId => (order['id'] ?? widget.initial['id'] ?? '').toString();
+
+  Color statusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'zakończone':
+        return kGreen;
+      case 'w trakcie':
+      case 'w przygotowaniu':
+        return kBlue;
+      case 'wstrzymane':
+      case 'anulowane':
+        return kRed;
+      default:
+        return kOrange;
+    }
+  }
+
+  Future<void> load() async {
+    if (orderId.isEmpty) {
+      setState(() {
+        busy = false;
+        error = 'Brak numeru zlecenia warsztatowego.';
+      });
+      return;
+    }
+    setState(() {
+      busy = true;
+      error = '';
+    });
+    try {
+      final fresh = await widget.api.orderDetail(orderId);
+      if (!mounted) return;
+      setState(() => order = fresh);
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> completeOperation(
+    Map<String, dynamic> semi,
+    Map<String, dynamic> operation,
+  ) async {
+    if (actionBusy || wmmPlanistaOperationCompleted(operation)) return;
+    final semiCode = (semi['kod'] ?? '').toString();
+    final operationName = (operation['nazwa'] ?? '').toString();
+    final target = fmtNumber(operation['do_wykonania']);
+    if (semiCode.isEmpty || operationName.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Potwierdź wykonanie'),
+        content: Text(
+          'Oznaczyć operację „$operationName” jako wykonaną dla $target szt.?\n\n'
+          'Zapisu nie można cofnąć z telefonu.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('ODHACZ'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => actionBusy = true);
+    try {
+      final updated = await widget.api.completePlanistaOperation(
+        orderId: orderId,
+        semiproductCode: semiCode,
+        operation: operationName,
+        baseRevision: (order['wmm_revision'] ?? '').toString(),
+      );
+      if (!mounted) return;
+      setState(() => order = updated);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Zapisano w WM: $operationName — wykonane.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } on ApiException catch (e) {
+      if (e.code == 'WMM_REVISION_CONFLICT') {
+        await load();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Zlecenie zmieniło się w WM. Odświeżono dane — sprawdź i odhacz ponownie.',
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => actionBusy = false);
+    }
+  }
+
+  Widget semiCard(Map<String, dynamic> semi) {
+    final operations = wmmPlanistaOperations(semi);
+    final toMake = double.tryParse((semi['do_wykonania'] ?? 0).toString()) ?? 0;
+    return RoundedCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${semi['nazwa'] ?? semi['kod'] ?? 'Półprodukt'}',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            '${semi['kod'] ?? '—'}',
+            style: const TextStyle(color: kMuted, fontSize: 12),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Potrzeba: ${fmtNumber(semi['potrzeba'])}  •  '
+            'Z magazynu: ${fmtNumber(semi['z_magazynu'])}  •  '
+            'Do wykonania: ${fmtNumber(semi['do_wykonania'])}',
+            style: const TextStyle(color: Color(0xFFC4CAD1)),
+          ),
+          Text(
+            'Wykonano: ${fmtNumber(semi['wykonano'])}  •  '
+            'Pozostało: ${fmtNumber(semi['pozostalo'])}',
+            style: const TextStyle(color: kMuted),
+          ),
+          const SizedBox(height: 12),
+          if (toMake <= 0)
+            const Text(
+              'Półprodukt pobierany z Magazynu — brak operacji do wykonania.',
+              style: TextStyle(color: kGreen, fontWeight: FontWeight.w700),
+            )
+          else if (operations.isEmpty)
+            const Text(
+              'Brak przypisanych operacji technologicznych.',
+              style: TextStyle(color: kMuted),
+            )
+          else ...[
+            const Text(
+              'Operacje',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 5),
+            ...operations.map((operation) {
+              final done = wmmPlanistaOperationCompleted(operation);
+              final available = operation['dostepna'] == true;
+              final name = (operation['nazwa'] ?? '').toString();
+              return Container(
+                margin: const EdgeInsets.only(top: 6),
+                decoration: BoxDecoration(
+                  color: done ? kGreen.withValues(alpha: 0.09) : kPanel2,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: done ? kGreen : kBorder),
+                ),
+                child: CheckboxListTile(
+                  value: done,
+                  onChanged: done || !available || actionBusy
+                      ? null
+                      : (value) {
+                          if (value == true) completeOperation(semi, operation);
+                        },
+                  activeColor: kGreen,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(
+                    name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      decoration: done ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    done
+                        ? 'Wykonano ${fmtNumber(operation['wykonano'])} / ${fmtNumber(operation['do_wykonania'])}'
+                        : available
+                            ? 'Do wykonania: ${fmtNumber(operation['do_wykonania'])}'
+                            : 'Najpierw zakończ poprzednią operację',
+                    style: TextStyle(color: done ? kGreen : kMuted),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final status = (order['status'] ?? 'nowe').toString();
+    final semis = wmmPlanistaSemiproducts(order);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Zlecenie $orderId'),
+        actions: [IconButton(onPressed: actionBusy ? null : load, icon: const Icon(Icons.refresh_rounded))],
+      ),
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: load,
+            color: kOrange,
+            child: busy
+                ? const ListView(
+                    physics: AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(height: 220),
+                      Center(child: CircularProgressIndicator(color: kOrange)),
+                    ],
+                  )
+                : error.isNotEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        children: [ErrorState(message: error, onRetry: load)],
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                        children: [
+                          RoundedCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '${order['produkt'] ?? 'Brak produktu'}',
+                                        style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+                                      ),
+                                    ),
+                                    StatusPill(text: status, color: statusColor(status)),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text('Zlec. wew: ${order['zlec_wew'] ?? '—'}'),
+                                Text('Warsztatowe: ${order['id'] ?? '—'}'),
+                                Text('Ilość: ${fmtNumber(order['ilosc'])}'),
+                                if ((order['termin'] ?? '').toString().isNotEmpty)
+                                  Text('Termin: ${order['termin']}'),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Półprodukty i czynności',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 10),
+                          if (semis.isEmpty)
+                            const RoundedCard(
+                              child: Text(
+                                'Brak półproduktów w tym zleceniu.',
+                                style: TextStyle(color: kMuted),
+                              ),
+                            )
+                          else
+                            ...semis.expand(
+                              (semi) => [
+                                semiCard(semi),
+                                const SizedBox(height: 10),
+                              ],
+                            ),
+                        ],
+                      ),
+          ),
+          if (actionBusy)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black38,
+                child: const Center(child: CircularProgressIndicator(color: kOrange)),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
