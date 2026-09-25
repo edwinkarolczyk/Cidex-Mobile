@@ -42,6 +42,36 @@ API_REPLACEMENT = """  Future<List<Map<String, dynamic>>> orders() async {
     return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
   }
 
+  Future<Map<String, dynamic>> orderDetail(String id) async {
+    final payload = await getJson(
+      '/api/v1/planista/orders/${Uri.encodeComponent(id)}',
+    );
+    return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
+  }
+
+  Future<Map<String, dynamic>> completePlanistaOperation({
+    required String orderId,
+    required String semiproductCode,
+    required String operation,
+    required String baseRevision,
+  }) async {
+    if (baseRevision.trim().isEmpty) {
+      throw ApiException('Odśwież zlecenie przed odhaczeniem operacji.');
+    }
+    final path =
+        '/api/v1/planista/orders/${Uri.encodeComponent(orderId)}'
+        '/semiproducts/${Uri.encodeComponent(semiproductCode)}'
+        '/operations/${Uri.encodeComponent(operation)}';
+    final payload = await postJson(
+      path,
+      {
+        'completed': true,
+        'base_revision': baseRevision,
+      },
+    );
+    return Map<String, dynamic>.from(payload['item'] as Map? ?? const {});
+  }
+
   Future<List<Map<String, dynamic>>> machines() async {
 """
 
