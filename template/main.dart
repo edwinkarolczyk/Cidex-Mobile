@@ -1292,9 +1292,9 @@ class _PlanistaOrderScreenState extends State<PlanistaOrderScreen> {
             onRefresh: load,
             color: kOrange,
             child: busy
-                ? const ListView(
-                    physics: AlwaysScrollableScrollPhysics(),
-                    children: [
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
                       SizedBox(height: 220),
                       Center(child: CircularProgressIndicator(color: kOrange)),
                     ],
