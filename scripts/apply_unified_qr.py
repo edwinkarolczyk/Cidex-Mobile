@@ -10,6 +10,17 @@ HELPERS = r'''
 Map<String, String>? wmmParseObjectQr(String raw) {
   final value = raw.trim();
   if (value.isEmpty) return null;
+
+  final orderMatch = RegExp(
+    r'^(?:WM|WMM|CIDEX):PLANISTA:(?:ORDER|ZLECENIE):(.+)$',
+    caseSensitive: false,
+  ).firstMatch(value);
+  if (orderMatch != null) {
+    final id = (orderMatch.group(1) ?? '').trim();
+    if (id.isEmpty) return null;
+    return <String, String>{'entity': 'order', 'id': id};
+  }
+
   final match = RegExp(
     r'^(?:CIDEX|WMM):(MACHINE|MASZYNA|TOOL|NARZEDZIE|NARZĘDZIE):(.+)$',
     caseSensitive: false,
@@ -89,8 +100,8 @@ NEW_RESOLVE = r'''  Future<void> resolve(String code) async {
       if (id.isEmpty) {
         throw ApiException('QR nie zawiera poprawnego ID obiektu.');
       }
-      if (entity != 'machine' && entity != 'tool') {
-        throw ApiException('Nie rozpoznano, czy kod QR należy do maszyny czy narzędzia.');
+      if (entity != 'machine' && entity != 'tool' && entity != 'order') {
+        throw ApiException('Nie rozpoznano typu obiektu z kodu QR.');
       }
 
       await controller.stop();
@@ -101,10 +112,19 @@ NEW_RESOLVE = r'''  Future<void> resolve(String code) async {
             builder: (_) => MachineScreen(api: widget.api, machineId: id),
           ),
         );
-      } else {
+      } else if (entity == 'tool') {
         await Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => ToolScreen(api: widget.api, toolId: id),
+          ),
+        );
+      } else {
+        await Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => PlanistaOrderScreen(
+              api: widget.api,
+              initial: <String, dynamic>{'id': id},
+            ),
           ),
         );
       }
@@ -141,7 +161,7 @@ def main() -> None:
             "funkcje rozpoznawania QR",
         )
 
-    source = replace_required(source, OLD_RESOLVE, NEW_RESOLVE, "obsługa QR maszyny/narzędzia")
+    source = replace_required(source, OLD_RESOLVE, NEW_RESOLVE, "obsługa QR maszyny/narzędzia/zlecenia")
     source = source.replace(
         "final manual = TextEditingController(text: 'CIDEX:MACHINE:42');",
         "final manual = TextEditingController();",
@@ -151,7 +171,7 @@ def main() -> None:
     source = source.replace("appBar: AppBar(title: const Text('Skanuj QR maszyny')),", "appBar: AppBar(title: const Text('Skanuj QR')),", 1)
     source = source.replace(
         "'Skieruj aparat na kod QR naklejony na maszynie.',",
-        "'Skieruj aparat na kod QR maszyny lub narzędzia. WMM rozpozna typ automatycznie.',",
+        "'Skieruj aparat na QR maszyny, narzędzia albo zlecenia Planisty. WMM rozpozna typ automatycznie.',",
         1,
     )
     source = source.replace(
