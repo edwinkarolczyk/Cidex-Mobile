@@ -98,6 +98,10 @@ void main() {
       wmmParseObjectQr('WMM:NARZEDZIE:500'),
       {'entity': 'tool', 'id': '500'},
     );
+    expect(
+      wmmParseObjectQr('WM:PLANISTA:ORDER:000012'),
+      {'entity': 'order', 'id': '000012'},
+    );
     expect(wmmQrEntity({'entity': 'tool'}), 'tool');
     expect(wmmQrObjectId({'nr_ewid': '42'}), '42');
   });
