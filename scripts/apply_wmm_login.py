@@ -288,6 +288,100 @@ def _apply_runtime_enhancements(source: str) -> str:
         'zapamiętanie użytkownika WMM',
     )
 
+    source = _replace_once(
+        source,
+        "      throw ApiException('Brak połączenia z Warsztat Menager: $error');",
+        "      throw ApiException(wmmConnectionErrorText(error));",
+        'instrukcja przy braku połączenia z WM',
+    )
+
+    logout_method = """  Future<void> logoutWmm() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Wylogować z WMM?'),
+        content: const Text('Zakończyć sesję użytkownika na tym telefonie?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            icon: const Icon(Icons.logout_rounded),
+            label: const Text('Wyloguj'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final sessionId = _wmmSessionId.trim();
+    _stopWmmPresence();
+    _wmmCurrentUser = <String, dynamic>{};
+
+    if (sessionId.isNotEmpty) {
+      try {
+        await _wmmLogoutFromServer(config, sessionId);
+      } catch (_) {
+        // Lokalnie wyloguj od razu. WM sam wygasi nieodświeżaną sesję.
+      }
+    }
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => WmmLoginGate(initialConfig: config),
+      ),
+      (route) => false,
+    );
+  }
+
+"""
+    source = _replace_in_scope(
+        source,
+        'class _HomeScreenState',
+        "  void open(Widget page) {\n",
+        logout_method + "  void open(Widget page) {\n",
+        'wylogowanie użytkownika WMM',
+    )
+    source = _replace_in_scope(
+        source,
+        'class _HomeScreenState',
+        "              BrandHeader(onSettings: openSettings),",
+        "              BrandHeader(onSettings: openSettings, onLogout: logoutWmm),",
+        'przycisk wylogowania na ekranie głównym',
+    )
+    source = _replace_once(
+        source,
+        "  const BrandHeader({super.key, required this.onSettings});\n  final VoidCallback onSettings;",
+        "  const BrandHeader({super.key, required this.onSettings, required this.onLogout});\n  final VoidCallback onSettings;\n  final VoidCallback onLogout;",
+        'parametr wylogowania nagłówka',
+    )
+    source = _replace_in_scope(
+        source,
+        'class BrandHeader extends StatelessWidget',
+        """        IconButton.filledTonal(
+          tooltip: 'Ustawienia połączenia',
+          onPressed: onSettings,
+          icon: const Icon(Icons.settings_rounded),
+        ),
+""",
+        """        IconButton.filledTonal(
+          tooltip: 'Wyloguj użytkownika',
+          onPressed: onLogout,
+          icon: const Icon(Icons.logout_rounded),
+        ),
+        const SizedBox(width: 6),
+        IconButton.filledTonal(
+          tooltip: 'Ustawienia połączenia',
+          onPressed: onSettings,
+          icon: const Icon(Icons.settings_rounded),
+        ),
+""",
+        'ikona wylogowania w nagłówku',
+    )
+
     machine_thumb_old = """                                      Container(
                                         width: 48,
                                         height: 48,
