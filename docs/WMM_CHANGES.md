@@ -1,5 +1,13 @@
 # WMM — zmiany bieżące
 
+## 2026-09-29 — WMM 0.5.37
+
+- Przy braku połączenia WMM podpowiada uruchomienie WM na komputerze i pozostawienie go uruchomionego w trybie API/WMM.
+- Komunikat przypomina też o wspólnej sieci Wi-Fi i ponownym skanowaniu QR po zmianie adresu komputera.
+- Dodano wylogowanie użytkownika z nagłówka WMM; kończy sesję serwera, zatrzymuje heartbeat i wraca do ekranu logowania.
+- Wylogowanie nie kasuje zapamiętanego loginu/PIN-u.
+
+
 ## 2026-09-25 — WMM 0.5.33
 
 - Planista: szczegół zlecenia ma przycisk **Historia** z wpisami czasu, użytkownika i wykonanej zmiany.

@@ -313,4 +313,18 @@ void main() {
     expect(detail.initial['id'], '000015');
   });
 
+  test('WMM 0.5.37 podpowiada uruchomienie WM w trybie API przy braku połączenia', () {
+    final text = wmmConnectionErrorText(Exception('timeout'));
+    expect(text, contains('Uruchom WM na komputerze'));
+    expect(text, contains('API/WMM'));
+    expect(text, contains('tej samej sieci Wi-Fi'));
+  });
+
+  test('WMM 0.5.37 wylogowanie przekazuje identyfikator bieżącej sesji', () {
+    expect(
+      wmmLogoutPayload(' session-123 '),
+      {'session_id': 'session-123'},
+    );
+  });
+
 }
