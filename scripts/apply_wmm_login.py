@@ -277,6 +277,12 @@ def _replace_in_scope(source: str, scope_marker: str, old: str, new: str, label:
 def _apply_runtime_enhancements(source: str) -> str:
     source = _replace_once(
         source,
+        "class _HomeScreenState extends State<HomeScreen> {",
+        "class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {",
+        'obserwator cyklu życia ekranu głównego',
+    )
+    source = _replace_once(
+        source,
         "        'X-Cidex-Token': token,\n      };",
         "        'X-Cidex-Token': token,\n        if (_wmmSessionId.trim().isNotEmpty) 'X-WMM-Session': _wmmSessionId.trim(),\n      };",
         'nagłówek sesji WMM',
@@ -286,6 +292,108 @@ def _apply_runtime_enhancements(source: str) -> str:
         "      _startWmmPresence(config, sessionId, heartbeatSeconds);",
         "      _wmmCurrentUser = user;\n      _startWmmPresence(config, sessionId, heartbeatSeconds);",
         'zapamiętanie użytkownika WMM',
+    )
+
+    source = _replace_in_scope(
+        source,
+        'class _HomeScreenState',
+        """  bool connected = false;
+  String connectionText = 'Sprawdzanie połączenia...';
+""",
+        """  bool connected = false;
+  bool _resumeSessionCheckBusy = false;
+  String connectionText = 'Sprawdzanie połączenia...';
+""",
+        'flaga sprawdzania sesji po powrocie',
+    )
+    source = _replace_in_scope(
+        source,
+        'class _HomeScreenState',
+        """  void initState() {
+    super.initState();
+    config = widget.initialConfig;
+    WidgetsBinding.instance.addPostFrameCallback((_) => refresh());
+  }
+
+  Future<void> refresh() async {
+""",
+        """  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    config = widget.initialConfig;
+    WidgetsBinding.instance.addPostFrameCallback((_) => refresh());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_checkSessionAfterResume());
+    }
+  }
+
+  Future<void> _checkSessionAfterResume() async {
+    if (_resumeSessionCheckBusy || !mounted || _wmmSessionId.trim().isEmpty) {
+      return;
+    }
+    _resumeSessionCheckBusy = true;
+    try {
+      setState(() {
+        busy = true;
+        connectionText = 'Sprawdzanie sesji WMM...';
+      });
+
+      final state = await _wmmCheckSession(config);
+      if (!mounted) return;
+
+      if (state == WmmSessionCheckState.expired) {
+        _stopWmmPresence();
+        _wmmCurrentUser = <String, dynamic>{};
+        setState(() {
+          connected = false;
+          busy = false;
+          connectionText = wmmSessionStateLabel(state);
+        });
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => WmmLoginGate(
+              initialConfig: config,
+              initialNotice: 'Sesja WMM wygasła. Zaloguj się ponownie.',
+            ),
+          ),
+          (route) => false,
+        );
+        return;
+      }
+
+      if (state == WmmSessionCheckState.offline) {
+        setState(() {
+          connected = false;
+          busy = false;
+          connectionText = kWmmOfflineHelp;
+        });
+        return;
+      }
+
+      setState(() {
+        connected = true;
+        busy = false;
+        connectionText = wmmSessionStateLabel(state);
+      });
+      await refresh();
+    } finally {
+      _resumeSessionCheckBusy = false;
+    }
+  }
+
+  Future<void> refresh() async {
+""",
+        'sprawdzanie sesji po wznowieniu WMM',
     )
 
     source = _replace_once(

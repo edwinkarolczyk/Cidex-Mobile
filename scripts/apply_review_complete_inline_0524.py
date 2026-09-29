@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 
 
-APP_VERSION = "0.5.37"
+APP_VERSION = "0.5.38"
 
 
 def replace_required(source: str, old: str, new: str, label: str) -> str:

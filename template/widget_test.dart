@@ -327,4 +327,28 @@ void main() {
     );
   });
 
+  test('WMM 0.5.38 rozróżnia stan sesji po powrocie z tła', () {
+    expect(
+      wmmSessionStateLabel(WmmSessionCheckState.connected),
+      'Połączono z Warsztat Menager',
+    );
+    expect(
+      wmmSessionStateLabel(WmmSessionCheckState.offline),
+      'Brak połączenia z Warsztat Menager',
+    );
+    expect(
+      wmmSessionStateLabel(WmmSessionCheckState.expired),
+      'Sesja wygasła',
+    );
+  });
+
+  test('WMM 0.5.38 ekran logowania przyjmuje komunikat o wygasłej sesji', () {
+    const config = ApiConfig(baseUrl: 'http://10.0.2.2:8765', token: 'ABC123');
+    const gate = WmmLoginGate(
+      initialConfig: config,
+      initialNotice: 'Sesja WMM wygasła. Zaloguj się ponownie.',
+    );
+    expect(gate.initialNotice, contains('Sesja WMM wygasła'));
+  });
+
 }

@@ -1,5 +1,13 @@
 # WMM — zmiany bieżące
 
+## 2026-09-29 — WMM 0.5.38
+
+- Po każdym powrocie WMM z tła aplikacja natychmiast sprawdza aktywną sesję w WM.
+- Brak sieci albo wyłączony WM nie wylogowuje użytkownika; WMM pokazuje czerwony stan braku połączenia i zachowuje lokalną sesję.
+- Odpowiedź 401 z WM oznacza wygasłą sesję: heartbeat jest zatrzymywany, użytkownik lokalny czyszczony, a WMM wraca do logowania.
+- Po wygaśnięciu sesji ekran logowania pokazuje pomarańczowy komunikat „Sesja WMM wygasła. Zaloguj się ponownie.”.
+
+
 ## 2026-09-29 — WMM 0.5.37
 
 - Przy braku połączenia WMM podpowiada uruchomienie WM na komputerze i pozostawienie go uruchomionego w trybie API/WMM.
