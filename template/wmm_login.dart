@@ -46,6 +46,7 @@ Future<WmmSessionCheckState> _wmmCheckSession(ApiConfig config) async {
   try {
     final response = await http
         .post(
+          // ignore: prefer_interpolation_to_compose_strings
           Uri.parse(base + '/api/v1/mobile/heartbeat'),
           headers: {
             'Accept': 'application/json',
