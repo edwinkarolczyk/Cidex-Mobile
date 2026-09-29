@@ -169,11 +169,11 @@ def main() -> None:
         raise RuntimeError("Nie znaleziono kafelka Aktualizacje do przeniesienia")
 
     header_anchor = (
-        "              BrandHeader(onSettings: openSettings),\n"
+        "              BrandHeader(onSettings: openSettings, onLogout: logoutWmm),\n"
         "              const SizedBox(height: 18),\n"
     )
     header_replacement = (
-        "              BrandHeader(onSettings: openSettings),\n"
+        "              BrandHeader(onSettings: openSettings, onLogout: logoutWmm),\n"
         "              const SizedBox(height: 6),\n"
         "              WmmHomeVersionBanner(\n"
         "                onOpenUpdates: () => open(const WmmUpdateScreen()),\n"
