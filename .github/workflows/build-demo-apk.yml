@@ -55,6 +55,7 @@ jobs:
           python scripts/apply_update_refresh_0522.py
           python scripts/apply_planned_reviews_visible_0523.py
           python scripts/apply_review_complete_inline_0524.py
+          python scripts/apply_session_resume_check_0538.py
 
       - name: Prepare stable release signing
         shell: bash
