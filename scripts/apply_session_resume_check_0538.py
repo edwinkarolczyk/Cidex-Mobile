@@ -21,25 +21,16 @@ def main() -> None:
         "flaga kontroli sesji po powrocie",
     )
 
-    old_lifecycle = """  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      refresh();
-      WmmNotifications.check(api);
-    }
-  }
+    source = replace_required(
+        source,
+        "      refresh();\n"
+        "      WmmNotifications.check(api);\n"
+        "      _openPendingSystemNotification();\n",
+        "      unawaited(_checkSessionAfterResume());\n",
+        "obsługa resumed po wszystkich patchach WMM",
+    )
 
-  Future<void> _wmmBackgroundCheck() async {
-"""
-
-    new_lifecycle = """  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      unawaited(_checkSessionAfterResume());
-    }
-  }
-
-  Future<void> _checkSessionAfterResume() async {
+    resume_method = """  Future<void> _checkSessionAfterResume() async {
     if (_resumeSessionCheckBusy || !mounted || _wmmSessionId.trim().isEmpty) {
       return;
     }
@@ -90,20 +81,20 @@ def main() -> None:
       await refresh();
       if (mounted) {
         await WmmNotifications.check(api);
+        await _openPendingSystemNotification();
       }
     } finally {
       _resumeSessionCheckBusy = false;
     }
   }
 
-  Future<void> _wmmBackgroundCheck() async {
 """
 
     source = replace_required(
         source,
-        old_lifecycle,
-        new_lifecycle,
-        "kontrola sesji po wznowieniu aplikacji",
+        "  Future<void> _openPendingSystemNotification() async {\n",
+        resume_method + "  Future<void> _openPendingSystemNotification() async {\n",
+        "metoda sprawdzania sesji po resumed",
     )
 
     path.write_text(source, encoding="utf-8")
