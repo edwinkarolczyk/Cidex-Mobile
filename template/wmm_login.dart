@@ -64,7 +64,21 @@ void _stopWmmPresence() {
 Future<void> _wmmLogoutFromServer(ApiConfig config, String sessionId) async {
   final id = sessionId.trim();
   if (id.isEmpty) return;
-  final base = config.baseUrl.trim().replaceFirst(RegExp(r'/+
+  final base = config.baseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
+  await http
+      .post(
+        Uri.parse('$base/api/v1/auth/logout'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
+          if (config.token.trim().isNotEmpty) 'X-WMM-Key': config.token.trim(),
+        },
+        body: jsonEncode(wmmLogoutPayload(id)),
+      )
+      .timeout(const Duration(seconds: 8));
+}
+
+class WmmLoginGate extends StatefulWidget {
   const WmmLoginGate({super.key, required this.initialConfig});
 
   final ApiConfig initialConfig;
@@ -72,7 +86,6 @@ Future<void> _wmmLogoutFromServer(ApiConfig config, String sessionId) async {
   @override
   State<WmmLoginGate> createState() => _WmmLoginGateState();
 }
-
 class _WmmLoginGateState extends State<WmmLoginGate> {
   late ApiConfig config;
   final login = TextEditingController();
